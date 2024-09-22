@@ -1,0 +1,14 @@
+numpy
+pandas
+scrapy
+fastapi
+uvicorn
+Jinja2
+appwrite
+python-dotenv
+pymongo
+aiohttp
+motor
+httpx
+
+-e .
