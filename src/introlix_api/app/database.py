@@ -1,18 +1,21 @@
+import os
 from pymongo import MongoClient
-import datetime
+from motor.motor_asyncio import AsyncIOMotorClient
 
-client = MongoClient('mongodb+srv://introlix:satyam123TcoderTech@introlixfeed.wrarjib.mongodb.net/')
+MONGODB_CLIENT_ID = os.getenv("MONGODB_CLIENT_ID")
+
+client = MongoClient(MONGODB_CLIENT_ID)
 
 db = client.IntrolixDb
 
 feed_data = db.feedData
 
-# doc = {
-#     "title": "NextJs and Python",
-#     "desc": "Best Programming And Framework Combination",
-#     "publication_date": datetime.datetime.utcnow()
-# }
+async def startup_db_client(app):
+    app.mongodb_client = AsyncIOMotorClient(MONGODB_CLIENT_ID)
+    app.mongodb = app.mongodb_client.get_database("IntrolixDb")
+    print("MongoDB connected.")
 
-# post_id = feed_data.insert_one(doc).inserted_id
-
-# print(post_id)
+async def shutdown_db_client(app):
+    app.mongodb_client.close()
+    print("Database disconnected.")
+    

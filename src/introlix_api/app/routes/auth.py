@@ -54,7 +54,7 @@ async def signup(user: UserSignup):
                 "Email": user.email,
                 "Password": user.password,
                 "DOB": user.dob.isoformat(),
-                "interests": user.selectedInterests,
+                "interests": user.interestList,
                 "profileColor": random.choice(avatar_colors)
             }
         )

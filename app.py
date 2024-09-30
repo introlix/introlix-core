@@ -6,15 +6,13 @@ import os
 import random
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
-from fastapi.responses import Response
-from introlix_api.app.routes import auth, run_spider
+from introlix_api.app.routes import auth, run_spider, similarity
 from typing import List
 from dotenv import load_dotenv, dotenv_values
 
-from introlix_api.app.appwrite import databases, APPWRITE_DATABASE_ID, ID, APPWRITE_ACCOUNT_COLLECTION_ID
-
-from pymongo import MongoClient
-from motor.motor_asyncio import AsyncIOMotorClient
+from introlix_api.app.appwrite import databases, APPWRITE_DATABASE_ID, ID, APPWRITE_ACCOUNT_COLLECTION_ID, get_interests
+from introlix_api.app.database import startup_db_client, shutdown_db_client
+from introlix_api.ml.recommendation import Recommendation
 
 from introlix_api.exception import CustomException
 
@@ -25,7 +23,6 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-MONGODB_CLIENT_ID = os.getenv("MONGODB_CLIENT_ID")
 
 class FeedModel(BaseModel):
     id: str = Field(..., alias="_id")
@@ -45,15 +42,6 @@ async def lifespan(app: FastAPI):
     # Close the database connection
     await shutdown_db_client(app)
 
-async def startup_db_client(app):
-    app.mongodb_client = AsyncIOMotorClient(MONGODB_CLIENT_ID)
-    app.mongodb = app.mongodb_client.get_database("IntrolixDb")
-    print("MongoDB connected.")
-
-async def shutdown_db_client(app):
-    app.mongodb_client.close()
-    print("Database disconnected.")
-
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
@@ -69,11 +57,13 @@ async def index():
     return RedirectResponse(url='/docs')
 
 @app.get("/feed_data", response_model=List[FeedModel])
-async def get_feed_data(page: int = 1, limit: int = 20, user_id: str = Query(...)):
+async def get_feed_data(page: int = 1, limit: int = 20, user_id: str = Query(...), category=None):
     try:
         skip = (page - 1) * limit
 
-        user_interests = ['world', 'sci/tech', 'coding', 'AI', 'ml', 'nature', 'business', 'sports']
+        interests = get_interests()
+        # getting only the interests not keywords
+        user_interests = interests['interests']
 
         users = databases.list_documents(
             database_id=APPWRITE_DATABASE_ID,
@@ -83,28 +73,28 @@ async def get_feed_data(page: int = 1, limit: int = 20, user_id: str = Query(...
         for doc in users['documents']:
             if user_id == doc['$id']:
                 user_interests = doc['interests']
-
-        name_mapping = {
-            'World News': 'world',
-            'Tech/Science': 'sci/tech',
-            'Coding': 'coding',
-            'AI News/Blogs': 'AI',
-            'Machine Learning': 'ml',
-            'Nature': 'nature',
-            'Business': 'business',
-            'Sports': 'sports'
-            }
         
-        user_interests = [name_mapping.get(item, item) for item in user_interests]
-
-        # Perform the aggregation
+        user_interests = [item.split(':')[1] for item in user_interests]
         response = await app.mongodb['feedData'].find({"category": {"$in": user_interests}}).skip(skip).limit(limit).to_list(limit)
 
-        random.shuffle(response)
+        # random.shuffle(response)
 
         # Filter out items that do not have a title
         response = [item for item in response if item.get('title')]
         response = [item for item in response if item.get('desc')]
+
+        # Perform the aggregation
+        # if category == None:
+        #     # response = await app.mongodb['feedData'].find({"category": {"$in": user_interests}}).skip(skip).limit(limit).to_list(limit)
+        # else:
+            
+        #     # response = await app.mongodb['feedData'].find({"category": category}).skip(skip).limit(limit).to_list(limit)
+
+        article_titles = [item['title'] for item in response]
+        recommendation_system = Recommendation(user_interests, article_titles)
+        recommended_titles = recommendation_system.recommend()
+
+        response = [post for post in response if post['title'] in recommended_titles]
 
 
         for item in response:
@@ -152,6 +142,27 @@ async def get_feed_data(post_id: str = Query(...)):
         return response
     except Exception as e:
         raise CustomException(e, sys) from e
+    
+@app.get("/test_recommendation")
+async def test_recommendation(
+    user_interests: list[str] = Query(..., description="Comma-separated list of user interests"),
+    articles: list[str] = Query(..., description="Comma-separated list of articles")
+):
+    """
+    Test endpoint for recommendations.
+    Takes user interests and articles as query parameters and returns recommended articles.
+    """
+
+    # Create a recommendation instance
+    recommendation = Recommendation(user_interests, articles)
+
+    # Get the recommended articles
+    recommended_articles = recommendation.recommend()
+
+    return {
+        "user_interests": user_interests,
+        "recommended_articles": recommended_articles,
+    }
 
 @app.get("/youtube/videos")
 async def get_youtube_videos(query: str = None):
@@ -172,3 +183,4 @@ async def get_youtube_videos(query: str = None):
     
 app.include_router(auth.router, prefix="/auth")
 app.include_router(run_spider.router, prefix="/spider")
+app.include_router(similarity.router, prefix="/feed")

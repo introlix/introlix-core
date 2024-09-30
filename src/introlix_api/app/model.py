@@ -8,7 +8,7 @@ class UserSignup(BaseModel):
     email: str
     password: str
     dob: date
-    selectedInterests: List[str]
+    interestList: List[str]
 
 # login model
 class UserLogin(BaseModel):
