@@ -44,9 +44,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+origins = [
+    "https://3000-idx-introlixfeed-1727753667410.cluster-e3wv6awer5h7kvayyfoein2u4a.cloudworkstations.dev",
+    "https://3001-idx-introlixfeed-1727753667410.cluster-e3wv6awer5h7kvayyfoein2u4a.cloudworkstations.dev/",
+    # Add other allowed origins here if needed
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,  # Specify allowed origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,9 +67,11 @@ async def get_feed_data(page: int = 1, limit: int = 20, user_id: str = Query(...
     try:
         skip = (page - 1) * limit
 
-        interests = get_interests()
+        response = get_interests()
+        user_interests = []
         # getting only the interests not keywords
-        user_interests = interests['interests']
+        for interest in response:
+            user_interests.append(interest['interest'])
 
         users = databases.list_documents(
             database_id=APPWRITE_DATABASE_ID,
@@ -74,21 +82,22 @@ async def get_feed_data(page: int = 1, limit: int = 20, user_id: str = Query(...
             if user_id == doc['$id']:
                 user_interests = doc['interests']
         
-        user_interests = [item.split(':')[1] for item in user_interests]
-        response = await app.mongodb['feedData'].find({"category": {"$in": user_interests}}).skip(skip).limit(limit).to_list(limit)
+        user_interests = [item.split(':')[0] for item in user_interests]
+        # response = await app.mongodb['feedData'].find({"category": {"$in": user_interests}}).skip(skip).limit(limit).to_list(limit)
+
+        
+
+        # Perform the aggregation
+        if category == None:
+            response = await app.mongodb['feedData'].find({"category": {"$in": user_interests}}).skip(skip).limit(limit).to_list(limit)
+        else:
+            response = await app.mongodb['feedData'].find({"category": category}).skip(skip).limit(limit).to_list(limit)
 
         # random.shuffle(response)
 
         # Filter out items that do not have a title
         response = [item for item in response if item.get('title')]
         response = [item for item in response if item.get('desc')]
-
-        # Perform the aggregation
-        # if category == None:
-        #     # response = await app.mongodb['feedData'].find({"category": {"$in": user_interests}}).skip(skip).limit(limit).to_list(limit)
-        # else:
-            
-        #     # response = await app.mongodb['feedData'].find({"category": category}).skip(skip).limit(limit).to_list(limit)
 
         article_titles = [item['title'] for item in response]
         recommendation_system = Recommendation(user_interests, article_titles)

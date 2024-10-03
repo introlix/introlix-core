@@ -5,6 +5,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from introlix_api.exception import CustomException
 from introlix_api.logger import logger
+from introlix_api.app.appwrite import get_interests
 
 class Recommendation:
     def __init__(self, user_interests: list, articles: list):
@@ -19,16 +20,9 @@ class Recommendation:
         self.articles = articles
         self.recommendations = []
         self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.interest_keywords = {
-            'world': ['global news', 'current events', 'international news'],
-            'sci/tech': ['technology', 'innovation', 'science'],
-            'coding': ['programming', 'software development', 'web development'],
-            'AI': ['artificial intelligence', 'machine learning', 'deep learning'],
-            'ml': ['data science', 'predictive modeling', 'statistical learning'],
-            'nature': ['environment', 'wildlife', 'conservation'],
-            'business': ['finance', 'entrepreneurship', 'economy'],
-            'sports': ['athletics', 'fitness', 'games'],
-        }
+        self.response = get_interests()
+        self.user_interests = [interest['interest'] for interest in self.response]
+        self.interest_keywords = {item['interest'].split(':')[1]: item['keywords'] for item in self.response}
 
     def encode(self, texts: list):
         """
@@ -55,7 +49,9 @@ class Recommendation:
         """
 
         # Initialize new interests
-        new_interests = self.user_interests.copy()  # Start with the old interests
+        new_interests = self.user_interests.copy()  # Start with the old 
+        new_interests = [item.split(':')[0] for item in new_interests]
+
 
         # Adding keywords to user interests based on existing interests
         for interest in self.user_interests:
@@ -68,7 +64,7 @@ class Recommendation:
 
 
         # encoding user interests into embeddings
-        print(f"Here is user interest: {self.user_interests}")
+        # print(f"Here is user interest keywords: {self.interest_keywords}")
         user_interests_embeddings = self.encode(new_interests)
         user_interests_embeddings = np.mean(user_interests_embeddings, axis=0)  # Averaging embeddings
 
@@ -77,6 +73,9 @@ class Recommendation:
 
         # encoding all articles into embeddings
         article_embeddings = self.encode(self.articles)
+
+        # print(f"Shape of user_interests_embeddings: {user_interests_embeddings.shape}")
+        # print(f"Shape of article_embeddings: {article_embeddings.shape}")
 
         # calculate cosine similarity between user interests and all article embeddings
         similarities = cosine_similarity(user_interests_embeddings, article_embeddings).flatten()

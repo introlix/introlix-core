@@ -8,6 +8,10 @@ from introlix_api.logger import logger
 
 router = APIRouter()
 
+@router.post("/test")
+async def test(data: dict):
+    return {"message": f"POST request works with data {data}"}
+
 @router.post('/signup')
 async def signup(user: UserSignup):
     """
