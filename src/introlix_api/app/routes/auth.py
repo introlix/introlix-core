@@ -62,7 +62,7 @@ async def signup(user: UserSignup):
                 "profileColor": random.choice(avatar_colors)
             }
         )
-        return {"message": "User created successfully", "document_id": result['$id']}
+        return {"message": "User created successfully", "document_id": result['$id'], "interests": result["interests"], "name": result["Name"][0], "profileColor": result["profileColor"]}
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -81,7 +81,7 @@ async def login(user: UserLogin):
         # Find user with matching email and password
         for doc in users['documents']:
             if doc['Email'] == user.email and doc['Password'] == user.password:
-                return {"message": "Login successful", "document_id": doc['$id']}
+                return {"message": "Login successful", "document_id": doc['$id'], "interests": doc["interests"], "name": doc["Name"][0], "profileColor": doc["profileColor"]}
         raise HTTPException(status_code=400, detail="Invalid credentials")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

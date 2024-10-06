@@ -45,8 +45,8 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 origins = [
-    "https://3000-idx-introlixfeed-1727753667410.cluster-e3wv6awer5h7kvayyfoein2u4a.cloudworkstations.dev",
-    "https://3001-idx-introlixfeed-1727753667410.cluster-e3wv6awer5h7kvayyfoein2u4a.cloudworkstations.dev/",
+    "http://localhost:3000",
+    "http://192.168.1.64:3000"
     # Add other allowed origins here if needed
 ]
 
