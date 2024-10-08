@@ -1,17 +1,29 @@
-# Use the official Python 3.10.9 image
-FROM python:3.10.9
+# Use the official Python image as the base image
+FROM python:3.10.9 AS build
 
-# Copy the current directory contents into the container at /app
-COPY . /app
-
-# Set the working directory to /app
+# Set the working directory
 WORKDIR /app
 
-# Install the dependencies from requirements.txt
+# Copy only requirements file first to leverage Docker cache
+COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
-# Expose port 7860 (default Hugging Face Space port)
+# Copy the rest of the application code
+COPY . .
+
+# Use a smaller base image for the final image
+FROM python:3.10.9-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Copy installed dependencies from the build stage
+COPY --from=build /app /app
+
+# Expose port 7860
 EXPOSE 7860
 
-# Start the FastAPI app (adjust the path to your FastAPI app file)
+# Start the FastAPI app
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
