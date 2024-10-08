@@ -46,7 +46,9 @@ app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost:3000",
-    "http://192.168.1.64:3000"
+    "http://192.168.1.64:3000",
+    "https://introlixfeed.vercel.app/",
+    "https://introlixfeed.vercel.com/"
     # Add other allowed origins here if needed
 ]
 
