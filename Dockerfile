@@ -1,17 +1,14 @@
+# Use the official Python 3.10.9 image
 FROM python:3.10.9
 
-WORKDIR /app
-
-# Upgrade pip
-RUN pip install --no-cache-dir --upgrade pip
-
-# Copy requirements.txt and install dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade -r requirements.txt
-
-# Copy the rest of the application code
+# Copy the current directory contents into the container at .
 COPY . .
 
-EXPOSE 7860
+# Set the working directory to /
+WORKDIR /
 
+# Install requirements.txt 
+RUN pip install --no-cache-dir --upgrade -r /requirements.txt
+
+# Start the FastAPI app on port 7860, the default port expected by Spaces
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
