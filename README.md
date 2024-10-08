@@ -1,12 +1,11 @@
 ---
-title: Your App Title
-emoji: 🚀
-colorFrom: blue
-colorTo: cyan
-sdk: streamlit  # Change to fastapi if applicable
-sdk_version: "0.85.0"  # Update with your SDK version
-app_file: app.py
+title: Introlix API
+emoji: 🔥
+colorFrom: green
+colorTo: blue
+sdk: docker
 pinned: false
+license: apache-2.0
 ---
 
 # Introlix API
