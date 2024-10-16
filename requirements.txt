@@ -13,4 +13,6 @@ httpx
 numpy
 sentence-transformers
 scikit-learn
+beautifulsoup4
+
 -e .
