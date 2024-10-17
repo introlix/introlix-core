@@ -9,6 +9,7 @@ client = MongoClient(MONGODB_CLIENT_ID)
 db = client.IntrolixDb
 
 feed_data = db.feedData
+search_data = db.search_data
 
 async def startup_db_client(app):
     app.mongodb_client = AsyncIOMotorClient(MONGODB_CLIENT_ID)

@@ -266,14 +266,15 @@ class IntrolixBot:
                 if title_text is not None:
                     title = title_text.strip()
 
+            new_links = self.get_urls_from_page(url)
+            new_links = list(set(new_links))
+
             return {
                 'url': url,
-                'status': status_code,
-                'timestamp': js_timestamp,
                 'content': {
                     'title': title,
+                    'links': sorted(new_links)
                 },
-                'error': None
             }
 
         except Exception as e:
@@ -290,6 +291,28 @@ class IntrolixBot:
         for i in range(0, len(lst), batch_size):
             yield lst[i:i + batch_size]
 
+    def scrape_parallel(self, batch_size: int):
+        """
+        Process scrape in parallel using multiprocessing.
+
+        Args:
+            urls (list): List of site URLs to process.
+            batch_size (int): Number of URLs to process in each batch.
+        Returns:
+            
+        """
+        num_workers = multiprocessing.cpu_count()
+        # getting urls in batch
+        batch_url = list(self.batch_converter(self.urls, batch_size))
+
+        # Create a multiprocessing pool
+        with multiprocessing.Pool(processes=num_workers) as pool:
+            for batch in batch_url:
+                results = pool.map(self.scrape, batch)
+                # data = list([sublist for sublist in results])
+
+                yield results
+            
     def get_urls_from_page_parallel(self, urls: list, batch_size: int) -> list:
         """
         Process get_urls_from_page in parallel using multiprocessing.
@@ -310,33 +333,9 @@ class IntrolixBot:
         with multiprocessing.Pool(processes=num_workers) as pool:
             for batch in batch_url:
                 results = pool.map(self.get_urls_from_page, batch)
-                fetched_urls.extend([url for sublist in results for url in sublist])
+                return list([url for sublist in results for url in sublist])
 
-        return list(set(list(fetched_urls)))
-
-    def scrape_parallel(self, urls: list, batch_size: int) -> dict:
-        """
-        Process scrape in parallel using multiprocessing.
-
-        Args:
-            urls (list): List of site URLs to process.
-            batch_size (int): Number of URLs to process in each batch.
-        Returns:
-            dict: data.
-        """
-        num_workers = multiprocessing.cpu_count()
-        data = []
-
-        # getting urls in batch
-        batch_url = list(self.batch_converter(urls, batch_size))
-
-        # Create a multiprocessing pool
-        with multiprocessing.Pool(processes=num_workers) as pool:
-            for batch in batch_url:
-                results = pool.map(self.scrape, batch)
-                data.extend([sublist for sublist in results])
-
-        return data
+        # return list(set(list(fetched_urls)))
 
     def crawl(self, batch_size: int, deep: int = 10):
         """

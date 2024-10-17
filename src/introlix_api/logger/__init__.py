@@ -19,4 +19,4 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-logger = logging.getLogger("textSummarizerLogger")
+logger = logging.getLogger("introlixLogger")
