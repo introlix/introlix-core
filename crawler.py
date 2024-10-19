@@ -67,7 +67,7 @@ def run_crawler_continuously():
 
             if root_urls:
                 logger.info(f"Starting crawler with {len(root_urls)} root URLs")
-                crawler(list(set(root_urls)))
+                crawler(list(set(root_urls[::-1])))
 
             # Extract and process URLs in batches
             for urls_batch in extract_urls(batch_size=100):
@@ -80,9 +80,9 @@ def run_crawler_continuously():
         raise CustomException(e, sys) from e
 
 @router.post('/crawler')
-async def run_crawler():
+def run_crawler():
     try:
-        await run_crawler_continuously()
+        run_crawler_continuously()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
