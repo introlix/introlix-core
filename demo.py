@@ -18,16 +18,19 @@
 #         writer.writerow([document.get("title")])
 
 # print(f"Title data successfully saved to {csv_file}")
-from introlix_api.crawler.bot import IntrolixBot, BotArgs
-import time
+# from introlix_api.crawler.bot import IntrolixBot, BotArgs
+# import time
 
-start = time.time()
-inbot = IntrolixBot(args=BotArgs, urls=["https://www.wikipedia.org/", "https://medium.com/", "https://www.bbc.com/"])
+# start = time.time()
+# inbot = IntrolixBot(args=BotArgs, urls=["https://www.wikipedia.org/", "https://medium.com/", "https://www.bbc.com/"])
 
-print(inbot.crawl(batch_size=1048))
-end = time.time()
-print(f"Time taken: {end - start}")
+# print(inbot.crawl(batch_size=1048))
+# # end = time.time()
+# print(f"Time taken: {end - start}")
 
+from introlix_api.app.appwrite import fetch_root_sites
+
+print(len(set(fetch_root_sites())))
 # Access the scraped data
 # for index, page_data in enumerate(inbot.data):
 #     print(f"Page {index + 1}:")

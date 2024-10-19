@@ -1,11 +1,12 @@
 import sys
 import time
+import asyncio
 from fastapi import APIRouter, HTTPException, Query
 from introlix_api.crawler.bot import IntrolixBot, BotArgs
 from introlix_api.exception import CustomException
 from introlix_api.logger import logger
 from introlix_api.app.database import search_data
-from introlix_api.app.appwrite import fetch_root_sites
+from introlix_api.app.appwrite import fetch_root_sites, save_urls
 
 router = APIRouter()
 
@@ -66,26 +67,27 @@ def run_crawler_continuously():
 
             if root_urls:
                 logger.info(f"Starting crawler with {len(root_urls)} root URLs")
-                crawler(root_urls)
+                crawler(list(set(root_urls)))
 
             # Extract and process URLs in batches
             for urls_batch in extract_urls(batch_size=100):
-                logger.info(f"Starting crawler with {len(set(urls_batch))} extracted URLs from MongoDB")
-                crawler(list(set(urls_batch)))
+                save_urls(urls_batch)
+                # logger.info(f"Starting crawler with {len(set(urls_batch))} extracted URLs from MongoDB")
+                # crawler(list(set(urls_batch)))
 
             time.sleep(10)  # Wait before the next iteration
     except Exception as e:
         raise CustomException(e, sys) from e
 
 @router.post('/crawler')
-def run_crawler():
+async def run_crawler():
     try:
-        run_crawler_continuously()
+        await run_crawler_continuously()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
 
-# if __name__ == "__main__":
-#     run_crawler_continuously()
+if __name__ == "__main__":
+    run_crawler_continuously()
 #     # urls = extract_urls()
 #     # print(urls)

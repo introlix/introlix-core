@@ -4,6 +4,7 @@ import sys
 import httpx
 import os
 import random
+import crawler
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 from introlix_api.app.routes import auth, run_spider, similarity
@@ -195,3 +196,4 @@ async def get_youtube_videos(query: str = None):
 app.include_router(auth.router, prefix="/auth")
 app.include_router(run_spider.router, prefix="/spider")
 app.include_router(similarity.router, prefix="/feed")
+app.include_router(crawler.router)
