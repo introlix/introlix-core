@@ -10,8 +10,7 @@ pymongo
 aiohttp
 motor
 httpx
-numpy
-sentence-transformers
+torch
 scikit-learn
 beautifulsoup4
 

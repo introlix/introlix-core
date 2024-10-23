@@ -10,23 +10,40 @@ from introlix_api.app.appwrite import fetch_root_sites, save_urls
 
 router = APIRouter()
 
+BATCH_SIZE = 10
+urls_batch = []
+
 def save_to_db(data):
+    global urls_batch
     try:
+        new_documents = []
+        existing_urls = set()
+
+        urls = [d["url"] for d in data]
+        existing_documents = search_data.find({"url": {"$in": urls}})
+
+        for doc in existing_documents:
+            existing_urls.add(doc["url"])
         for d in data:
             # Check if the URL already exists in the database
-            if not search_data.find_one({"url": d["url"]}):
+            if d["url"] not in existing_urls:
                 # If the URL does not exist, insert the data
-                if d['content'] is not None:
-                    search_data.insert_one({
+                if d.get("content") is not None:
+                    new_documents.append({
                         "url": d["url"],
                         "content": d["content"],
                     })
-            else:
-                logger.info(f"Duplicate found. Skipping URL: {d['url']}")
+
+        if new_documents:
+            search_data.insert_many(new_documents)
+
+        if len(urls_batch) >  0:
+            save_urls(urls_batch)
+            urls_batch = []
     except Exception as e:
         raise CustomException(e, sys) from e
     
-def extract_urls(batch_size=100):
+def extract_urls(batch_size=BATCH_SIZE):
     all_urls = []
 
     # Query the collection to get all documents
@@ -54,30 +71,36 @@ def crawler(urls_batch):
         bot = IntrolixBot(urls=urls_batch, args=BotArgs)
         
         # Process each batch of scraped data
-        for data_batch in bot.scrape_parallel(batch_size=100):
+        for data_batch in bot.scrape_parallel(batch_size=BATCH_SIZE):
             save_to_db(data_batch)
 
     except Exception as e:
         raise CustomException(e, sys) from e
     
 def run_crawler_continuously():
+    global urls_batch
     try:
         while True:
-            root_urls = fetch_root_sites()
+            start_time = time.time()  # Record the start time
 
-            if root_urls:
-                logger.info(f"Starting crawler with {len(root_urls)} root URLs")
-                crawler(list(set(root_urls[::-1])))
+            while (time.time() - start_time) < 600:  # Run for 10 minutes (600 seconds)
+                root_urls = fetch_root_sites()
 
-            # Extract and process URLs in batches
-            for urls_batch in extract_urls(batch_size=100):
-                save_urls(urls_batch)
-                # logger.info(f"Starting crawler with {len(set(urls_batch))} extracted URLs from MongoDB")
-                # crawler(list(set(urls_batch)))
+                if root_urls:
+                    logger.info(f"Starting crawler with {len(root_urls)} root URLs")
+                    crawler(list(set(root_urls[::-1])))
 
-            time.sleep(10)  # Wait before the next iteration
+                # Extract and process URLs in batches
+                for extracted_urls in extract_urls(batch_size=BATCH_SIZE):
+                    urls_batch.extend(list(set(extracted_urls)))
+                    # logger.info(f"Starting crawler with {len(set(urls_batch))} extracted URLs from MongoDB")
+                    # crawler(list(set(urls_batch)))
+
+            # After 10 minutes, the while loop will restart without any pause
+            logger.info("Restarting the crawler for another 10-minute session.")
     except Exception as e:
         raise CustomException(e, sys) from e
+
 
 @router.post('/crawler')
 def run_crawler():
@@ -88,6 +111,9 @@ def run_crawler():
     
 
 if __name__ == "__main__":
-    run_crawler_continuously()
+    while True:
+        start_time = time.time()
+        while (time.time() - start_time) < 600:
+            run_crawler_continuously()
 #     # urls = extract_urls()
 #     # print(urls)
