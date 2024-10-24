@@ -13,5 +13,6 @@ httpx
 torch
 scikit-learn
 beautifulsoup4
+sentence-transformers
 
 -e .
