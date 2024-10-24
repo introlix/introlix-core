@@ -8,6 +8,7 @@ from urllib.parse import urlparse, urlunsplit, urljoin
 from urllib.robotparser import RobotFileParser
 from introlix_api.exception import CustomException
 from urllib.robotparser import RobotFileParser
+from sentence_transformers import SentenceTransformer
 
 from requests import ReadTimeout
 from introlix_api.utils.core import html_to_dom
@@ -46,6 +47,7 @@ class IntrolixBot:
         self.sitemaps = []
         self.pages = []
         self.data = []
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
 
         # bot args
         self.TIMEOUT_SECONDS = args.TIMEOUT_SECONDS
@@ -189,6 +191,37 @@ class IntrolixBot:
             return []
             # raise CustomException(e, sys) from e
 
+    def get_desc(self, url: str) -> str:
+        """
+        Function to get the description of a page.
+
+        Args:
+            url (str): URL of the page.
+        Returns:
+            str: desc of the page.
+        """
+        try:
+            status_code, content = self.fetch(url)
+
+            if status_code != 200:
+                return []
+
+            soup = BeautifulSoup(content, 'html.parser')
+            urls = []
+
+            desc = soup.find('meta', attrs={'name': 'description'})
+
+            if desc:
+                desc = desc.get('content')
+                
+                return desc
+
+            return ''
+            
+        except Exception as e:
+            logger.info(f"Error occured while getting urls from page {e}")
+            return []
+
     def scrape(self, url: str) -> dict:
         """
         Function to scrape the site.
@@ -273,6 +306,8 @@ class IntrolixBot:
                 'url': url,
                 'content': {
                     'title': title,
+                    'vector': self.model.encode(title).tolist(),
+                    'desc': self.get_desc(url),
                     'links': sorted(new_links)
                 },
             }

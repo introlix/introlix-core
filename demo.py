@@ -28,9 +28,9 @@
 # # end = time.time()
 # print(f"Time taken: {end - start}")
 
-from introlix_api.app.appwrite import fetch_root_sites
+# from introlix_api.app.appwrite import fetch_root_sites
 
-print(len(set(fetch_root_sites())))
+# print(len(set(fetch_root_sites())))
 # Access the scraped data
 # for index, page_data in enumerate(inbot.data):
 #     print(f"Page {index + 1}:")
