@@ -11,4 +11,4 @@ RUN pip install -r requirements.txt
 RUN mkdir -p /app/logs
 RUN chmod 777 /app/logs
 
-CMD ["sh", "-c", "python crawler.py & uvicorn app:app --host 0.0.0.0 --port 7860"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860"]
