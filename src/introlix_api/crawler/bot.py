@@ -47,7 +47,7 @@ class IntrolixBot:
         self.sitemaps = []
         self.pages = []
         self.data = []
-        # self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        # 9self.model = SentenceTransformer('all-MiniLM-L6-v2')
 
         # bot args
         self.TIMEOUT_SECONDS = args.TIMEOUT_SECONDS
@@ -307,7 +307,7 @@ class IntrolixBot:
                 'content': {
                     'title': title,
                     # 'vector': self.model.encode(title).tolist(),
-                    'desc': self.get_desc(url),
+                    # 'desc': self.get_desc(url),
                     'links': sorted(new_links)
                 },
             }
