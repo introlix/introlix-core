@@ -1,6 +1,7 @@
 import os, sys, re, time
 import requests
 import multiprocessing
+import numpy as np
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
 from introlix_api.logger import logger
@@ -9,6 +10,7 @@ from urllib.robotparser import RobotFileParser
 from introlix_api.exception import CustomException
 from urllib.robotparser import RobotFileParser
 from sentence_transformers import SentenceTransformer
+from sklearn.decomposition import PCA
 
 from requests import ReadTimeout
 from introlix_api.utils.core import html_to_dom
@@ -26,6 +28,7 @@ class BotArgs:
     GOOD_URL_REGEX = re.compile(r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)')
     DEFAULT_ENCODING = 'utf8'
     DEFAULT_ENC_ERRORS = 'replace'
+    PCA_DIM = 256
     ALLOWED_EXCEPTIONS = (ValueError, ConnectionError, ReadTimeout, TimeoutError,
                       OSError, NewConnectionError, MaxRetryError, SSLCertVerificationError)
 
@@ -60,6 +63,7 @@ class IntrolixBot:
         self.ALLOWED_EXCEPTIONS = args.ALLOWED_EXCEPTIONS
         self.MAX_DEEP_SIZE = args.MAX_DEEP_SIZE
         self.MAX_DATA_SIZE = args.MAX_DATA_SIZE
+        self.PCA_DIM = args.PCA_DIM
 
         # Initialize trackers
         self.current_data_size = 0  # Track total data size
@@ -191,37 +195,6 @@ class IntrolixBot:
             return []
             # raise CustomException(e, sys) from e
 
-    def get_desc(self, url: str) -> str:
-        """
-        Function to get the description of a page.
-
-        Args:
-            url (str): URL of the page.
-        Returns:
-            str: desc of the page.
-        """
-        try:
-            status_code, content = self.fetch(url)
-
-            if status_code != 200:
-                return []
-
-            soup = BeautifulSoup(content, 'html.parser')
-            urls = []
-
-            desc = soup.find('meta', attrs={'name': 'description'})
-
-            if desc:
-                desc = desc.get('content')
-                
-                return desc
-
-            return ''
-            
-        except Exception as e:
-            logger.info(f"Error occured while getting urls from page {e}")
-            return []
-
     def scrape(self, url: str) -> dict:
         """
         Function to scrape the site.
@@ -299,15 +272,29 @@ class IntrolixBot:
                 if title_text is not None:
                     title = title_text.strip()
 
+            desc_element = dom.xpath("//meta[@name='description']")
+            desc = ""
+            if len(desc_element) > 0:
+                desc_text = desc_element[0].get("content")
+                if desc_text is not None:
+                    desc = desc_text.strip()
+
             new_links = self.get_urls_from_page(url)
             new_links = list(set(new_links))
+
+            # ==== getting embeddings of the title ====
+            p = PCA(n_components=self.PCA_DIM)
+            # applying PCA
+            embeddings = p.fit_transform(self.model.encode(title))
+            # applying zipf
+            embeddings *= np.log(1 + np.arange(embeddings.shape[0]))[:, None]
 
             return {
                 'url': url,
                 'content': {
                     'title': title,
-                    # 'vector': self.model.encode(title).tolist(),
-                    # 'desc': self.get_desc(url),
+                    'embeddings': embeddings.tolist(),
+                    'desc': desc,
                     'links': sorted(new_links)
                 },
             }

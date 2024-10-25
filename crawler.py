@@ -80,9 +80,7 @@ def crawler(urls_batch):
 def run_crawler_continuously():
     global urls_batch
     try:
-        first_run = 0
         while True:
-            print(f"Running Crawler {first_run + 1} times")
             start_time = time.time()  # Record the start time
 
             while (time.time() - start_time) < 600:  # Run for 10 minutes (600 seconds)
