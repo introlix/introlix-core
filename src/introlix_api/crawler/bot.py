@@ -293,8 +293,8 @@ class IntrolixBot:
                 'url': url,
                 'content': {
                     'title': title,
-                    'embeddings': embeddings.tolist(),
-                    'desc': desc,
+                    # 'embeddings': embeddings.tolist(),
+                    # 'desc': desc,
                     'links': sorted(new_links)
                 },
             }
