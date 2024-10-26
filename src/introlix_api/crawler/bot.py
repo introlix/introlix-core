@@ -191,36 +191,36 @@ class IntrolixBot:
             return []
             # raise CustomException(e, sys) from e
 
-    def get_desc(self, url: str) -> str:
-        """
-        Function to get the description of a page.
+    # def get_desc(self, url: str) -> str:
+    #     """
+    #     Function to get the description of a page.
 
-        Args:
-            url (str): URL of the page.
-        Returns:
-            str: desc of the page.
-        """
-        try:
-            status_code, content = self.fetch(url)
+    #     Args:
+    #         url (str): URL of the page.
+    #     Returns:
+    #         str: desc of the page.
+    #     """
+    #     try:
+    #         status_code, content = self.fetch(url)
 
-            if status_code != 200:
-                return []
+    #         if status_code != 200:
+    #             return []
 
-            soup = BeautifulSoup(content, 'html.parser')
-            urls = []
+    #         soup = BeautifulSoup(content, 'html.parser')
+    #         urls = []
 
-            desc = soup.find('meta', attrs={'name': 'description'})
+    #         desc = soup.find('meta', attrs={'name': 'description'})
 
-            if desc:
-                desc = desc.get('content')
+    #         if desc:
+    #             desc = desc.get('content')
                 
-                return desc
+    #             return desc
 
-            return ''
+    #         return ''
             
-        except Exception as e:
-            logger.info(f"Error occured while getting urls from page {e}")
-            return []
+    #     except Exception as e:
+    #         logger.info(f"Error occured while getting urls from page {e}")
+    #         return []
 
     def scrape(self, url: str) -> dict:
         """
@@ -299,6 +299,14 @@ class IntrolixBot:
                 if title_text is not None:
                     title = title_text.strip()
 
+
+            desc_element = dom.xpath("//meta[@name='description']")
+            desc = ""
+            if len(desc_element) > 0:
+                desc_text = desc_element[0].get('content')
+                if desc_text is not None:
+                    desc = desc_text.strip()
+
             new_links = self.get_urls_from_page(url)
             new_links = list(set(new_links))
 
@@ -307,7 +315,7 @@ class IntrolixBot:
                 'content': {
                     'title': title,
                     # 'vector': self.model.encode(title).tolist(),
-                    'desc': self.get_desc(url),
+                    'desc': desc,
                     'links': sorted(new_links)
                 },
             }
