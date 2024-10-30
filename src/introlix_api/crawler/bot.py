@@ -339,7 +339,7 @@ class IntrolixBot:
         Returns:
             
         """
-        num_workers = max(1, os.cpu_count() // 2)
+        num_workers = max(1, os.cpu_count() - 1)
         # getting urls in batch
         batch_url = list(self.batch_converter(self.urls, batch_size))
 
@@ -361,7 +361,7 @@ class IntrolixBot:
         Returns:
             list: List of fetched URLs.
         """
-        num_workers = max(1, os.cpu_count() // 2)
+        num_workers = max(1, os.cpu_count() - 1)
         fetched_urls = []
 
         # getting urls in batch
