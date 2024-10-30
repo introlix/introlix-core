@@ -18,6 +18,7 @@ APPWRITE_PROJECT_ID = os.getenv("APPWRITE_PROJECT_ID")
 APPWRITE_API_KEY = os.getenv("APPWRITE_API_KEY")
 APPWRITE_DATABASE_ID = os.getenv("APPWRITE_DATABASE_ID")
 APPWRITE_ROOTSITES_COLLECTION_ID = os.getenv("APPWRITE_ROOTSITES_COLLECTION_ID")
+APPWRITE_SAVED_URLS_COLLECTION_ID = os.getenv("APPWRITE_SAVED_URLS_COLLECTION_ID")
 APPWRITE_INTERESTS_TO_PICK_COLLECTION_ID = os.getenv("APPWRITE_INTERESTS_TO_PICK_COLLECTION_ID")
 APPWRITE_ACCOUNT_COLLECTION_ID = os.getenv("APPWRITE_ACCOUNT_COLLECTION_ID")
 
@@ -61,6 +62,35 @@ def fetch_root_sites():
     
     except Exception as e:
         raise CustomException(e, sys) from e
+    
+def fetch_saved_urls():
+    """
+    Function to fetch the root sites from appwrite
+    """
+    try:
+        logger.info("Fetching all of the saved urls...")
+        limit = 100
+        offset = 0
+
+        root_sites = []
+
+        while True:
+            response = databases.list_documents(database_id=APPWRITE_DATABASE_ID,collection_id=APPWRITE_SAVED_URLS_COLLECTION_ID, queries=[Query.limit(limit), Query.offset(offset)]) # fetching all of the root sites
+
+            for root_site in response['documents']:
+                root_sites.append(root_site['url'])
+
+            if len(response['documents']) < limit:
+                break
+
+            offset += limit
+
+            # root_sites = [root_site['url'] for root_site in response['documents']] # extracting the urls
+    
+        return root_sites
+    
+    except Exception as e:
+        raise CustomException(e, sys) from e
 
 def get_interests():
     """
@@ -89,7 +119,7 @@ def save_urls(urls):
             # Fetch a chunk of documents from the database
             response = databases.list_documents(
                 database_id=APPWRITE_DATABASE_ID,
-                collection_id=APPWRITE_ROOTSITES_COLLECTION_ID,
+                collection_id=APPWRITE_SAVED_URLS_COLLECTION_ID,
                 queries=[Query.limit(limit), Query.offset(offset)]
             )
             
@@ -111,7 +141,7 @@ def save_urls(urls):
                     url = sanitize_url(url)
                     databases.create_document(
                         database_id=APPWRITE_DATABASE_ID,
-                        collection_id=APPWRITE_ROOTSITES_COLLECTION_ID,
+                        collection_id=APPWRITE_SAVED_URLS_COLLECTION_ID,
                         document_id=ID.unique(),
                         data={'url': url}
                     )

@@ -12,6 +12,7 @@ from sentence_transformers import SentenceTransformer
 
 from requests import ReadTimeout
 from introlix_api.utils.core import html_to_dom
+from introlix_api.app.appwrite import fetch_root_sites
 from ssl import SSLCertVerificationError
 from urllib3.exceptions import NewConnectionError, MaxRetryError
 
@@ -64,24 +65,6 @@ class IntrolixBot:
         # Initialize trackers
         self.current_data_size = 0  # Track total data size
         self.current_depth = {}  # Track the number of pages fetched for each URL
-
-        # for url in self.urls:
-        #     url_pages = self.get_urls_from_page(url)
-        #     self.pages.extend(url_pages)
-
-        #     # scraping the url
-        #     for page in self.pages:
-        #         self.data.append(self.scrape(page))
-
-        # check if robots.txt is allows to crawl
-        # if self.obey_robots_txt:
-        #     for url in self.urls:
-        #         allowed_to_crawl = self.see_robots_txt(url)
-        #         if allowed_to_crawl:
-        #             self.allowed_to_crawl_sites.append(url)
-        #             logger.debug(f"Allowed to crawl {url}")
-        #         else:
-        #             logger.debug(f"Not allowed to crawl {url}")
 
     def fetch(self, url:str) -> tuple[int, bytes]:
         """
@@ -183,7 +166,19 @@ class IntrolixBot:
                     # if not self.BAD_URL_REGEX.search(href):
                     #     href = href
                     if self.GOOD_URL_REGEX.search(href):
-                        urls.append(href)
+                        for root_url in fetch_root_sites():
+                            root_url_parsed = urlparse(root_url)
+                            href_parsed = urlparse(href)
+                            root_url_parsed_netloc = root_url_parsed.netloc
+                            href_netloc = href_parsed.netloc
+                            
+                            # Debugging lines
+                            logger.info(f"Checking href domain: {href_netloc} against root domain: {root_url_parsed_netloc}")
+                            
+                            if root_url_parsed_netloc == href_netloc:
+                                urls.append(href)
+                                break
+                            
             return list(set(urls))
             
         except Exception as e:
@@ -409,90 +404,3 @@ class IntrolixBot:
             logger.info(f"All urls len is {len(all_urls)}")
 
             # logger.info(f"Fetched New urls are {new_urls}")
-
-        # for level in range(deep):
-        #     logger.info(f"Starting level {level + 1}/{deep}. URLs to process: {len(current_urls)}")
-        #     logger.info(f"Current URLs being processed: {current_urls}")
-        #     new_urls = self.get_urls_from_page_parallel(current_urls, batch_size)
-        #     new_urls = set(new_urls)
-
-        #     logger.info(f"Fetched {len(new_urls)} URLs from current level.")
-            
-        #     # Remove already visited URLs to avoid duplicate crawling
-        #     new_urls_before_dedup = len(new_urls)
-        #     new_urls = new_urls - visited_urls
-        #     logger.info(f"New URLs after deduplication: {len(new_urls)} out of {new_urls_before_dedup}")
-
-        #     # If no new URLs are found, stop the crawling
-        #     if not new_urls:
-        #         logger.info("No new URLs found. Stopping crawl.")
-        #         break
-
-        #     # Add newly found URLs to the global set of all URLs
-        #     all_urls.update(new_urls)
-
-        #     # Mark the current URLs as visited
-        #     visited_urls.update(current_urls)
-
-        #     # Prepare for the next level of crawling
-        #     current_urls = list(new_urls)
-
-        #     # Log the current state of URLs after processing
-        #     logger.info(f"Current URLs updated for next level: {current_urls}")
-        #     logger.info(f"Total visited URLs so far: {len(visited_urls)}")
-        #     logger.info(f"Total unique URLs found so far: {len(all_urls)}")
-
-        #     logger.info(f"Finished level {level + 1}")
-
-        # return list(all_urls)
-        # url_pages = []
-
-        # print(url_pages)
-        # print("----------------")
-
-        # url_pages = self.get_urls_from_page_parallel(self.urls, batch_size)
-
-        # print(len(url_pages))
-        # print(len(set(url_pages)))
-
-        # print(url_pages)
-
-
-        # for url in self.urls:
-        #     if url not in self.current_depth:
-        #         self.current_depth[url] = 0  # Initialize depth for each URL
-
-            # Fetch URLs from the page
-            # url_pages.extend(self.get_urls_from_page(url))
-
-
-            # Only fetch if we haven't exceeded MAX_DEEP_SIZE for this URL
-            # for page in url_pages:
-            #     if self.current_depth[url] >= self.MAX_DEEP_SIZE:
-            #         logger.info(f"Max depth reached for {url}. Stopping further fetches.")
-            #         break
-                
-            #     if page != None:
-            #         print(page)
-            #         url_pages.extend(self.get_urls_from_page(page))
-
-            # for page in url_pages:
-            #     if self.current_data_size >= self.MAX_DATA_SIZE:
-            #         logger.info("Max data size reached. Stopping all further fetches.")
-            #         return  # Exit if total data size exceeds the limit
-
-            #     # Fetch and scrape the page
-            #     page_data = self.scrape(page)
-
-            #     # Add page data to list and update current data size
-            #     self.pages.append(page)
-            #     self.data.append(page_data)
-            #     self.current_data_size += len(str(page_data))  # Estimate data size as string length
-
-            #     # Increment depth for the current URL
-            #     self.current_depth[url] += 1
-
-            #     # Check if max data size reached after scraping this page
-            #     if self.current_data_size >= self.MAX_DATA_SIZE:
-            #         logger.info("Max data size reached during crawling. Stopping.")
-            #         return
