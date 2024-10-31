@@ -1,6 +1,7 @@
+import re
 import sys
 import time
-import asyncio
+from urllib.parse import urlparse
 from fastapi import APIRouter, HTTPException, Query
 from introlix_api.crawler.bot import IntrolixBot, BotArgs
 from introlix_api.exception import CustomException
@@ -21,8 +22,13 @@ def filter_urls(url: str) -> bool:
     Returns:
         bool: True if the url is article url else False
     """
+    parsed_url = urlparse(url)
+
+    if parsed_url.path in ('', '/'):
+        return False
+    
     non_article_keywords = [
-        "/product", "/products", "/home", "/", "/item", "/items", "/category", "/categories",
+        "/product", "/products", "/home", "/item", "/items", "/category", "/categories",
         "/login", "/signin", "/logout", "/signup", "/register", "/account", "/user",
         "/profile", "/dashboard", "/settings", "/preferences", "/order", "/orders",
         "/cart", "/checkout", "/payment", "/subscribe", "/subscription",
@@ -46,9 +52,35 @@ def filter_urls(url: str) -> bool:
         "/@", "shop", "wiki" # TODO: need to add more
     ]
 
-    if any(keyword in url for keyword in non_article_keywords):
-        return False
-    return True
+    article_keywords = [
+        "/blog/", "post", "article", "insights", "guide", "tutorial",
+        "how-to", "what", "how", "introduction"
+    ]
+
+    article_pattern = [
+        r'/(/blog/|article|articles|post|posts|blogs|)/\d{4}/\d{2}/+[a-z0-9-]+/?',
+        r'/(/blog/|article|articles|post|posts|blogs|)/[a-z0-9-]+/[a-z0-9-]+',
+        r'(?<!\/\/www)(/blog/|article|articles|post|posts|blogs)/[a-z0-9-]+',
+        r'^(?!.*\/category\/).*\/[a-z0-9-]+\/[a-z0-9-]+(-[a-z0-9-]+)+$',
+        r'/[^/]+/\d{4}/\d{2}/\d{2}/+[a-z0-9]+/?',
+        r'/[^/]+/\d{4}/\d{2}/+[a-z0-9]+/?'
+        r'/[a-z0-9-]+/\d{4}/\d{2}/+/?',
+        r'/[a-z0-9-]+/\d{4}/\d{2}/\d{2}/+/?'
+    ]
+
+    for pattern in article_pattern:
+        if re.search(pattern, url):
+            if not any(keyword in url for keyword in non_article_keywords):
+                return True
+            
+    if any (keyword in url for keyword in article_keywords):
+        return True
+    
+    last_segment = parsed_url.path.strip('/').split('/')[-1]
+    if '-' in last_segment and len(last_segment.split('-')) > 2:
+        return True
+    
+    return False
 
 def save_to_db(data):
     global urls_batch
@@ -62,14 +94,15 @@ def save_to_db(data):
         for doc in existing_documents:
             existing_urls.add(doc["url"])
         for d in data:
-            # Check if the URL already exists in the database
-            if d["url"] not in existing_urls:
-                # If the URL does not exist, insert the data
-                if d.get("content") is not None:
-                    new_documents.append({
-                        "url": d["url"],
-                        "content": d["content"],
-                    })
+            if filter_urls(d["url"]):
+                # Check if the URL already exists in the database
+                if d["url"] not in existing_urls:
+                    # If the URL does not exist, insert the data
+                    if d.get("content") is not None:
+                        new_documents.append({
+                            "url": d["url"],
+                            "content": d["content"],
+                        })
 
         if new_documents:
             search_data.insert_many(new_documents)
