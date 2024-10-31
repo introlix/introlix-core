@@ -166,18 +166,19 @@ class IntrolixBot:
                     # if not self.BAD_URL_REGEX.search(href):
                     #     href = href
                     if self.GOOD_URL_REGEX.search(href):
-                        for root_url in fetch_root_sites():
-                            root_url_parsed = urlparse(root_url)
-                            href_parsed = urlparse(href)
-                            root_url_parsed_netloc = root_url_parsed.netloc
-                            href_netloc = href_parsed.netloc
+                        urls.append(href)
+                        # for root_url in fetch_root_sites():
+                        #     root_url_parsed = urlparse(root_url)
+                        #     href_parsed = urlparse(href)
+                        #     root_url_parsed_netloc = root_url_parsed.netloc
+                        #     href_netloc = href_parsed.netloc
                             
-                            # Debugging lines
-                            logger.info(f"Checking href domain: {href_netloc} against root domain: {root_url_parsed_netloc}")
+                        #     # Debugging lines
+                        #     logger.info(f"Checking href domain: {href_netloc} against root domain: {root_url_parsed_netloc}")
                             
-                            if root_url_parsed_netloc == href_netloc:
-                                urls.append(href)
-                                break
+                        #     if root_url_parsed_netloc == href_netloc:
+                        #         urls.append(href)
+                        #         break
                             
             return list(set(urls))
             
