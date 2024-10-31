@@ -45,9 +45,8 @@ class IntrolixBot:
         self.is_sitemap = is_sitemap
         self.look_for_rss = look_for_rss
         self.obey_robots_txt = obey_robots_txt
-        self.sitemaps = []
-        self.pages = []
-        self.data = []
+        self.root_sites = fetch_root_sites()
+        self.root_sites_netlocs = {urlparse(root_url).netloc for root_url in self.root_sites}
         # self.model = SentenceTransformer('all-MiniLM-L6-v2')
 
         # bot args
@@ -166,19 +165,12 @@ class IntrolixBot:
                     # if not self.BAD_URL_REGEX.search(href):
                     #     href = href
                     if self.GOOD_URL_REGEX.search(href):
-                        urls.append(href)
-                        # for root_url in fetch_root_sites():
-                        #     root_url_parsed = urlparse(root_url)
-                        #     href_parsed = urlparse(href)
-                        #     root_url_parsed_netloc = root_url_parsed.netloc
-                        #     href_netloc = href_parsed.netloc
-                            
-                        #     # Debugging lines
-                        #     logger.info(f"Checking href domain: {href_netloc} against root domain: {root_url_parsed_netloc}")
-                            
-                        #     if root_url_parsed_netloc == href_netloc:
-                        #         urls.append(href)
-                        #         break
+                        href_netloc = urlparse(href).netloc
+
+                        logger.debug(f"Checking href domain: {href_netloc} against root domains")
+
+                        if href_netloc not in self.root_sites_netlocs:
+                            urls.append(href)
                             
             return list(set(urls))
             
