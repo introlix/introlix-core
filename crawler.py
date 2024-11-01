@@ -42,25 +42,25 @@ def filter_urls(url: str) -> bool:
         "/reviews", "/search", "/find", "/browse", "/list", "/tags", "/explore",
         "/new", "/trending", "/latest", "/promotions", "/offers", "/deals", "/discount",
         "/coupon", "/coupons", "/gift", "/store", "/stores", "/locator", "/locations",
-        "/branches", "/news", "/events", "/webinar", "/calendar", "/schedule",
+        "/branches", "/events", "/webinar", "/calendar", "/schedule",
         "/class", "/classes", "/lesson", "/lessons", "/training", "/activity",
         "/activities", "/workshop", "/exhibit", "/performance", "/map", "/directions",
         "/weather", "/traffic", "/rates", "/auction", "/bid", "/tender", "/investment",
         "/loan", "/mortgage", "/property", "/real-estate", "/construction", "/project",
         "/client", "/clients", "/partner", "/sponsor", "/media", "/press", "/releases",
         "/announcements", "/newsroom", "/resources", "courses", "collections", "/u/", "/members/",
-        "/@", "shop", "wiki" # TODO: need to add more
+        "/@", "/shop", "/wiki", "/author", "/dynamic", "/image", "/submit"  # TODO: need to add more
     ]
 
     article_keywords = [
         "/blog/", "post", "article", "insights", "guide", "tutorial",
-        "how-to", "what", "how", "introduction"
+        "how-to", "what", "how", "introduction", "/news/"
     ]
 
     article_pattern = [
-        r'/(/blog/|article|articles|post|posts|blogs|)/\d{4}/\d{2}/+[a-z0-9-]+/?',
-        r'/(/blog/|article|articles|post|posts|blogs|)/[a-z0-9-]+/[a-z0-9-]+',
-        r'(?<!\/\/www)(/blog/|article|articles|post|posts|blogs)/[a-z0-9-]+',
+        r'/(/blog/|article|articles|post|posts|blogs|news|)/\d{4}/\d{2}/+[a-z0-9-]+/?',
+        r'/(/blog/|article|articles|post|posts|blogs|news|)/[a-z0-9-]+/[a-z0-9-]+',
+        r'(?<!\/\/www)(/blog/|article|articles|post|posts|blogs|news|)/[a-z0-9-]+',
         r'^(?!.*\/category\/).*\/[a-z0-9-]+\/[a-z0-9-]+(-[a-z0-9-]+)+$',
         r'/[^/]+/\d{4}/\d{2}/\d{2}/+[a-z0-9]+/?',
         r'/[^/]+/\d{4}/\d{2}/+[a-z0-9]+/?'

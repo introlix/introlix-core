@@ -1,5 +1,6 @@
 import os, sys, re, time
 import requests
+from keybert import KeyBERT
 import multiprocessing
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
@@ -8,7 +9,6 @@ from urllib.parse import urlparse, urlunsplit, urljoin
 from urllib.robotparser import RobotFileParser
 from introlix_api.exception import CustomException
 from urllib.robotparser import RobotFileParser
-from sentence_transformers import SentenceTransformer
 
 from requests import ReadTimeout
 from introlix_api.utils.core import html_to_dom
@@ -47,7 +47,12 @@ class IntrolixBot:
         self.obey_robots_txt = obey_robots_txt
         self.root_sites = fetch_root_sites()
         self.root_sites_netlocs = {urlparse(root_url).netloc for root_url in self.root_sites}
-        # self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.kw_model = KeyBERT()
+        self.good_tags = {'.net', 'dotnet', 'web3d','ai', 'aiops', 'algolia', 'amazon', 'alibaba', 'amd', 'android',
+                          'angular', 'apache', 'airflow', 'ml', 'machine learning', 'nlp', 'data science', 'generator', 'coding', 'java', 
+                          'javascript', 'html', 'css', 'python', 'flask', 'fastapi', 'react', 'reactjs', 'nextjs', 
+                          'nuxt', 'nuxtjs', 'angular', 'angularjs', 'kotlin', 'android', 'ios', 'swift', 'js', 
+                          'pytorch', 'tensorflow', 'keras'}  # TODO: need to add more
 
         # bot args
         self.TIMEOUT_SECONDS = args.TIMEOUT_SECONDS
@@ -179,37 +184,6 @@ class IntrolixBot:
             return []
             # raise CustomException(e, sys) from e
 
-    # def get_desc(self, url: str) -> str:
-    #     """
-    #     Function to get the description of a page.
-
-    #     Args:
-    #         url (str): URL of the page.
-    #     Returns:
-    #         str: desc of the page.
-    #     """
-    #     try:
-    #         status_code, content = self.fetch(url)
-
-    #         if status_code != 200:
-    #             return []
-
-    #         soup = BeautifulSoup(content, 'html.parser')
-    #         urls = []
-
-    #         desc = soup.find('meta', attrs={'name': 'description'})
-
-    #         if desc:
-    #             desc = desc.get('content')
-                
-    #             return desc
-
-    #         return ''
-            
-    #     except Exception as e:
-    #         logger.info(f"Error occured while getting urls from page {e}")
-    #         return []
-
     def scrape(self, url: str) -> dict:
         """
         Function to scrape the site.
@@ -295,15 +269,29 @@ class IntrolixBot:
                 if desc_text is not None:
                     desc = desc_text.strip()
 
+            image_elements = dom.xpath("//img")
+            image_urls = [urljoin(url, img.get("src")) for img in image_elements if img.get("src")]
+            if len(image_urls) > 0:
+                image = image_urls[0]
+            else:
+                image = ""
+
             new_links = self.get_urls_from_page(url)
             new_links = list(set(new_links))
+
+            keywords = self.kw_model.extract_keywords(title, top_n=5, stop_words='english')
+            tags = [keyword[0] for keyword in keywords if keyword[0] in self.good_tags]
+            if not tags:
+                tags = ['general']
+            tags = ', '.join(tags)
 
             return {
                 'url': url,
                 'content': {
                     'title': title,
-                    # 'vector': self.model.encode(title).tolist(),
                     'desc': desc,
+                    'image': image,
+                    'tags': tags,
                     'links': sorted(new_links)
                 },
             }
