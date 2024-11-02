@@ -1,5 +1,6 @@
 import os, sys, re, time
 import errno
+import string
 import requests
 import multiprocessing
 from bs4 import BeautifulSoup
@@ -298,7 +299,8 @@ class IntrolixBot:
             new_links = list(set(new_links))
 
             # Normalize extracted keywords to match the format in good_tags
-            normalized_title = title.lower().replace(' ', '-')
+            normalized_title = re.split(r'[\s-]+', title.lower().translate(str.maketrans('', '',
+                                    string.punctuation)))
             # Filter based on good_tags
             tags = [tag for tag in self.good_tags if tag in normalized_title]
             if not tags:
