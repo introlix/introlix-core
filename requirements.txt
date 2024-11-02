@@ -15,6 +15,5 @@ scikit-learn
 beautifulsoup4
 sentence-transformers
 nltk
-keybert
 
 -e .

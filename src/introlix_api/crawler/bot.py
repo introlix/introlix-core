@@ -1,6 +1,6 @@
 import os, sys, re, time
+import errno
 import requests
-from keybert import KeyBERT
 import multiprocessing
 from bs4 import BeautifulSoup
 from dataclasses import dataclass
@@ -47,12 +47,30 @@ class IntrolixBot:
         self.obey_robots_txt = obey_robots_txt
         self.root_sites = fetch_root_sites()
         self.root_sites_netlocs = {urlparse(root_url).netloc for root_url in self.root_sites}
-        self.kw_model = KeyBERT()
         self.good_tags = {'.net', 'dotnet', 'web3d','ai', 'aiops', 'algolia', 'amazon', 'alibaba', 'amd', 'android',
-                          'angular', 'apache', 'airflow', 'ml', 'machine learning', 'nlp', 'data science', 'generator', 'coding', 'java', 
-                          'javascript', 'html', 'css', 'python', 'flask', 'fastapi', 'react', 'reactjs', 'nextjs', 
-                          'nuxt', 'nuxtjs', 'angular', 'angularjs', 'kotlin', 'android', 'ios', 'swift', 'js', 
-                          'pytorch', 'tensorflow', 'keras'}  # TODO: need to add more
+                          'angular', 'apache', 'airflow', 'apollo', 'apple', 'appwrite', 'arm', 'assembly', 'auth0',
+                          'automl', 'aws', 'aws-ec2', 'aws-s3', 'aws-sagemaker', 'azure', 'axios', 'backend', 'bard',
+                          'bash', 'bert', 'bi', 'big-data', 'binary-search', 'binary-tree', 'bitcoin', 'blender', 'blockchain',
+                          'c', 'c#', 'c++', 'cpp', 'chatgpt', 'cicd', 'ci-cd', 'claude', 'cloud', 'cloudflare', 'cms', 'coding',
+                          'cv', 'computer-vision', 'cpython', 'crawler', 'css', 'crypto', 'cuda', 'curl', 'dart', 'data-analysis',
+                          'data', 'data-science', 'deep-learning', 'deno', 'devops', 'diffusion-models', 'django', 'dns', 'docker',
+                          'elixir', 'embedded', 'embeddings', 'erlang', 'express', 'facebook', 'fastapi', 'fedora', 'figma', 'firebase',
+                          'firefox', 'flask', 'frontend', 'game-design', 'game-development', 'gcp', 'genai', 'git', 'github', 'gitlab',
+                          'godot', 'golang', 'google', 'google-gemini', 'google-chrome', 'google-deepmind', 'gpt', 'graphql', 'grok',
+                          'hackathon', 'hardware', 'heroku', 'hive', 'html', 'htmx', 'huggingface', 'ibm', 'imb-cloud', 'intel', 'ios',
+                          'java', 'javascript', 'jdk', 'jenkins', 'jetbrains', 'jquery', 'jsx', 'jupyter', 'jvm', 'jwt', 'jax',
+                          'keras', 'kotlin', 'langchain', 'laravel', 'linkedin', 'linux', 'llama', 'llm', 'llmops', 'lstm', 'mac',
+                          'machine-learning', 'ml', 'math', 'matplotlib', 'microsoft', 'mistral-ai', 'mlops', 'mobile', 'mongodb',
+                          'mongoose', 'mozilla', 'nestjs', 'netflix', 'netlify', 'neural-networks', 'nixos', 'nlp', 'nocode','nodejs',
+                          'nosql', 'notion', 'npm', 'numpy', 'nuxt', 'nvidia', 'oauth', 'object-detection', 'objective-c', 'ollama', 
+                          'open-source', 'openai', 'openapi', 'opencv', 'opensearch', 'oracle', 'pandas', 'paypal', 'perl', 'php', 
+                          'pip', 'postgresql', 'pastman', 'power-bi', 'prisma', 'python', 'pytorch', 'r', 'rag', 'react', 'reactjs',
+                          'react-native', 'red-hat', 'redis', 'redux', 'rest-api', 'robotics', 'ruby', 'safari', 'scikit', 'shell',
+                          'slack', 'sora', 'spark', 'stripe', 'swift', 'tableau', 'tensorflow', 'tesla', 'text-generation', 'text-to-image',
+                          'text-to-speech', 'text-to-video', 'transfer-learning', 'transformers', 'twitter', 'ubuntu', 'ui-design', 'ui-ux',
+                          'unity', 'unix', 'unreal-engine', 'unsupervised-learning', 'ux', 'v8', 'vector-search', 'vercel', 'vertex-ai',
+                          'video-generation', 'vim', 'visual-studio', 'vscode', 'vuejs', 'vue', 'web3', 'webassembly', 'web3', 'whisper', 'xbox',
+                          'yarn', 'zoom'}  # TODO: need to add more
 
         # bot args
         self.TIMEOUT_SECONDS = args.TIMEOUT_SECONDS
@@ -279,8 +297,10 @@ class IntrolixBot:
             new_links = self.get_urls_from_page(url)
             new_links = list(set(new_links))
 
-            keywords = self.kw_model.extract_keywords(title, top_n=5, stop_words='english')
-            tags = [keyword[0] for keyword in keywords if keyword[0] in self.good_tags]
+            # Normalize extracted keywords to match the format in good_tags
+            normalized_title = title.lower().replace(' ', '-')
+            # Filter based on good_tags
+            tags = [tag for tag in self.good_tags if tag in normalized_title]
             if not tags:
                 tags = ['general']
             tags = ', '.join(tags)
@@ -324,13 +344,17 @@ class IntrolixBot:
         # getting urls in batch
         batch_url = list(self.batch_converter(self.urls, batch_size))
 
-        # Create a multiprocessing pool
-        with multiprocessing.Pool(processes=num_workers) as pool:
-            for batch in batch_url:
-                results = pool.map(self.scrape, batch)
-                # data = list([sublist for sublist in results])
+        try:
+            # Create a multiprocessing pool
+            with multiprocessing.Pool(processes=num_workers) as pool:
+                for batch in batch_url:
+                    results = pool.map(self.scrape, batch)
+                    # data = list([sublist for sublist in results])
 
-                yield results
+                    yield results
+        except IOError as e:
+            if e.errno == errno.EPIPE:
+                pass
             
     def get_urls_from_page_parallel(self, urls: list, batch_size: int) -> list:
         """
@@ -348,13 +372,17 @@ class IntrolixBot:
         # getting urls in batch
         batch_url = list(self.batch_converter(urls, batch_size))
 
-        # Create a multiprocessing pool
-        with multiprocessing.Pool(processes=num_workers) as pool:
-            for batch in batch_url:
-                results = pool.map(self.get_urls_from_page, batch)
-                return list([url for sublist in results for url in sublist])
+        try:
+            # Create a multiprocessing pool
+            with multiprocessing.Pool(processes=num_workers) as pool:
+                for batch in batch_url:
+                    results = pool.map(self.get_urls_from_page, batch)
+                    return list([url for sublist in results for url in sublist])
 
-        # return list(set(list(fetched_urls)))
+            # return list(set(list(fetched_urls)))
+        except IOError as e:
+            if e.errno == errno.EPIPE:
+                pass
 
     def crawl(self, batch_size: int, deep: int = 10):
         """

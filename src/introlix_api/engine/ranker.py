@@ -1,5 +1,6 @@
 from introlix_api.engine.third_party_apis import get_devDotTo_data
 from introlix_api.engine.graphql import fetch_hashnode_posts
+from introlix_api.app.database import search_data
 
 def fetch_data(page: int = 1, per_page: int = 10, tag = ''):
     """
