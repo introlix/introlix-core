@@ -179,7 +179,7 @@ class IntrolixBot:
 
                         logger.debug(f"Checking href domain: {href_netloc} against root domains")
 
-                        if href_netloc not in self.root_sites_netlocs:
+                        if href_netloc in self.root_sites_netlocs:
                             urls.append(href)
                             
             return list(set(urls))
@@ -291,7 +291,6 @@ class IntrolixBot:
             tags = [tag for tag in self.good_tags if tag in normalized_title]
             if not tags:
                 tags = ['general']
-            tags = ', '.join(tags)
 
             return {
                 'url': url,
@@ -300,6 +299,7 @@ class IntrolixBot:
                     'desc': desc,
                     'image': image,
                     'tags': tags,
+                    'vote': 0,
                     'links': sorted(new_links)
                 },
             }

@@ -8,6 +8,7 @@ python3 ./src/introlix_api/app/algolia.py &
 while true; do
     # Start the crawler in the background
     python3 crawler.py &
+    python3 ./src/introlix_api/engine/ranker.py
     
     # Wait 30 minutes before restarting
     sleep 1800
