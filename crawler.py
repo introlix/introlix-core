@@ -168,6 +168,9 @@ def run_crawler_continuously():
                     urls_batch.extend(list(set(extracted_urls)))
                     # logger.info(f"Starting crawler with {len(set(urls_batch))} extracted URLs from MongoDB")
                     # crawler(list(set(urls_batch)))
+                time.sleep(1)
+
+            time.sleep(1)
 
             # After 10 minutes, the while loop will restart without any pause
             logger.info("Restarting the crawler for another 10-minute session.")
