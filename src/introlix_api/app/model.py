@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 from datetime import date
 
@@ -14,3 +14,13 @@ class UserSignup(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+
+# feed model
+class FeedModel(BaseModel):
+    id: str = Field(..., alias="_id")
+    title: str
+    desc: str
+    url: str
+    image_url: str
+    tags: list
+    vote: int
