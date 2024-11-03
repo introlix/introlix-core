@@ -15,5 +15,7 @@ scikit-learn
 beautifulsoup4
 sentence-transformers
 nltk
+algoliasearch
+apscheduler
 
 -e .

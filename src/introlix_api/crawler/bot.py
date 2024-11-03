@@ -340,22 +340,20 @@ class IntrolixBot:
                     # data = list([sublist for sublist in results])
 
                     yield results
+                    time.sleep(0.1)
         except IOError as e:
             if e.errno == errno.EPIPE:
                 pass
             
-    def get_urls_from_page_parallel(self, urls: list, batch_size: int) -> list:
+    def get_urls_from_page_parallel(self, urls: list, batch_size: int):
         """
         Process get_urls_from_page in parallel using multiprocessing.
 
         Args:
             urls (list): List of site URLs to process.
             batch_size (int): Number of URLs to process in each batch.
-        Returns:
-            list: List of fetched URLs.
         """
         num_workers = max(1, os.cpu_count() - 1)
-        fetched_urls = []
 
         # getting urls in batch
         batch_url = list(self.batch_converter(urls, batch_size))
@@ -365,9 +363,13 @@ class IntrolixBot:
             with multiprocessing.Pool(processes=num_workers) as pool:
                 for batch in batch_url:
                     results = pool.map(self.get_urls_from_page, batch)
-                    return list([url for sublist in results for url in sublist])
+                    # return list([url for sublist in results for url in sublist])
+                    for sublist in results:
+                        for url in sublist:
+                            yield url  # Yield each URL incrementally
+                    time.sleep(0.1)
+                    
 
-            # return list(set(list(fetched_urls)))
         except IOError as e:
             if e.errno == errno.EPIPE:
                 pass

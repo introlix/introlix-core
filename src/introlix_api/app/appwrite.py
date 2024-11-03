@@ -110,7 +110,7 @@ def save_urls(urls):
     Function to save the URLs in Appwrite. Handles large collections efficiently.
     """
     try:
-        limit = 100
+        limit = 10
         offset = 0
         existing_urls = set()  # Set to store unique URLs
 

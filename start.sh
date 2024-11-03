@@ -2,6 +2,7 @@
 
 # Start the uvicorn server in the background
 uvicorn app:app --host 0.0.0.0 --port 7860 &
+python3 ./src/introlix_api/app/algolia.py &
 
 # Infinite loop to restart the crawler every 30 minutes
 while true; do
