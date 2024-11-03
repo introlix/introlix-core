@@ -21,9 +21,6 @@ from urllib3.exceptions import NewConnectionError, MaxRetryError
 class BotArgs:
     TIMEOUT_SECONDS = 3
     MAX_FETCH_SIZE = 1024*1024
-    MAX_DEEP_SIZE = 100
-    MAX_DATA_SIZE = MAX_DEEP_SIZE * 20
-    MAX_URL_LENGTH = 150
     BAD_URL_REGEX = re.compile(r'\/\/localhost\b|\.jpg$|\.png$|\.js$|\.gz$|\.zip$|\.pdf$|\.bz2$|\.ipynb$|\.py$')
     GOOD_URL_REGEX = re.compile(r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)')
     DEFAULT_ENCODING = 'utf8'
@@ -32,19 +29,15 @@ class BotArgs:
                       OSError, NewConnectionError, MaxRetryError, SSLCertVerificationError)
 
 class IntrolixBot:
-    def __init__(self, urls: list, args: BotArgs, is_sitemap: bool = True, look_for_rss: bool = True, obey_robots_txt: bool = True):
+    def __init__(self, urls: list, args: BotArgs, obey_robots_txt: bool = True):
         """
         Initialize the IntrolixBot.
 
         Args:
             urls (list): List of URLs to scrape.
-            is_sitemap (bool, optional): Whether the URLs are sitemaps. Defaults to True.
-            look_for_rss (bool, optional): Whether to look for RSS feeds. Defaults to True.
             obey_robots_txt (bool, optional): Whether to obey robots.txt. Defaults to True.
         """
         self.urls = urls
-        self.is_sitemap = is_sitemap
-        self.look_for_rss = look_for_rss
         self.obey_robots_txt = obey_robots_txt
         self.root_sites = fetch_root_sites()
         self.root_sites_netlocs = {urlparse(root_url).netloc for root_url in self.root_sites}
@@ -76,18 +69,11 @@ class IntrolixBot:
         # bot args
         self.TIMEOUT_SECONDS = args.TIMEOUT_SECONDS
         self.MAX_FETCH_SIZE = args.MAX_FETCH_SIZE
-        self.MAX_URL_LENGTH = args.MAX_URL_LENGTH
         self.BAD_URL_REGEX = args.BAD_URL_REGEX
         self.GOOD_URL_REGEX = args.GOOD_URL_REGEX
         self.DEFAULT_ENCODING = args.DEFAULT_ENCODING
         self.DEFAULT_ENC_ERRORS = args.DEFAULT_ENC_ERRORS
         self.ALLOWED_EXCEPTIONS = args.ALLOWED_EXCEPTIONS
-        self.MAX_DEEP_SIZE = args.MAX_DEEP_SIZE
-        self.MAX_DATA_SIZE = args.MAX_DATA_SIZE
-
-        # Initialize trackers
-        self.current_data_size = 0  # Track total data size
-        self.current_depth = {}  # Track the number of pages fetched for each URL
 
     def fetch(self, url:str) -> tuple[int, bytes]:
         """

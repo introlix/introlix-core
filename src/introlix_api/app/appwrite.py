@@ -87,7 +87,7 @@ def fetch_saved_urls():
 
             # root_sites = [root_site['url'] for root_site in response['documents']] # extracting the urls
     
-        return root_sites
+        return root_sites[-4000:]
     
     except Exception as e:
         raise CustomException(e, sys) from e
@@ -113,8 +113,37 @@ def save_urls(urls):
         limit = 100
         offset = 0
         existing_urls = set()  # Set to store unique URLs
+
+        # Check the total number of documents in the collection
+        total_count_response = databases.list_documents(
+            database_id=APPWRITE_DATABASE_ID,
+            collection_id=APPWRITE_SAVED_URLS_COLLECTION_ID,
+            queries=[Query.limit(1)]
+        )
+        total_count = total_count_response['total']
+
+        # Delete all documents if the count exceeds 20,000
+        if total_count > 20000:
+            logger.info("URL count exceeded 20,000. Deleting all documents in the collection.")
+            while True:
+                response = databases.list_documents(
+                    database_id=APPWRITE_DATABASE_ID,
+                    collection_id=APPWRITE_SAVED_URLS_COLLECTION_ID,
+                    queries=[Query.limit(limit)]
+                )
+
+                if not response['documents']:
+                    break  # All documents have been deleted
+                
+                for doc in response['documents']:
+                    databases.delete_document(
+                        database_id=APPWRITE_DATABASE_ID,
+                        collection_id=APPWRITE_SAVED_URLS_COLLECTION_ID,
+                        document_id=doc['$id']
+                    )
         
-        # Fetch and process all documents in chunks
+        # Fetch and process all documents in chunks to populate existing_urls set
+        offset = 0  # Reset offset after deletion
         while True:
             # Fetch a chunk of documents from the database
             response = databases.list_documents(
@@ -138,12 +167,13 @@ def save_urls(urls):
         for url in urls:
             if url not in existing_urls:
                 if is_valid_url(url):
-                    url = sanitize_url(url)
+                    sanitized_url = sanitize_url(url)
                     databases.create_document(
                         database_id=APPWRITE_DATABASE_ID,
                         collection_id=APPWRITE_SAVED_URLS_COLLECTION_ID,
                         document_id=ID.unique(),
-                        data={'url': url}
+                        data={'url': sanitized_url}
                     )
     except Exception as e:
         raise CustomException(e, sys) from e
+

@@ -85,59 +85,55 @@ def filter_urls(url: str) -> bool:
 def save_to_db(data):
     global urls_batch
     try:
-        new_documents = []
-        existing_urls = set()
+        urls = [d["url"] for d in data if filter_urls(d["url"])]
+        existing_urls = {doc["url"] for doc in search_data.find({"url": {"$in": urls}})}
 
-        urls = [d["url"] for d in data]
-        existing_documents = search_data.find({"url": {"$in": urls}})
+        # Use a generator to only keep new documents that need to be inserted
+        new_documents = (
+            {"url": d["url"], "content": d["content"]}
+            for d in data
+            if d["url"] not in existing_urls and d.get("content") is not None
+        )
 
-        for doc in existing_documents:
-            existing_urls.add(doc["url"])
-        for d in data:
-            if filter_urls(d["url"]):
-                # Check if the URL already exists in the database
-                if d["url"] not in existing_urls:
-                    # If the URL does not exist, insert the data
-                    if d.get("content") is not None:
-                        new_documents.append({
-                            "url": d["url"],
-                            "content": d["content"],
-                        })
+        # Insert documents if there are any to add
+        new_docs_list = list(new_documents)
 
-        if new_documents:
-            search_data.insert_many(new_documents)
+        if new_docs_list:
+            search_data.insert_many(new_docs_list)
 
-        if len(urls_batch) >  0:
+        # Save URLs if urls_batch is not empty
+        if urls_batch:
             try:
                 save_urls(urls_batch)
             except Exception as e:
                 logger.error(f"Error saving URLs to Appwrite: {str(e)}")
-            urls_batch = []
+            urls_batch.clear()
+
     except Exception as e:
         raise CustomException(e, sys) from e
     
 def extract_urls(batch_size=BATCH_SIZE):
-    all_urls = []
+    # Fetch documents with required fields only, reducing memory footprint per document
+    documents = search_data.find({}, {"content.links": 1})
 
-    # Query the collection to get all documents
-    documents = search_data.find()
+    # Initialize a list to store URLs in batches
+    batch_urls = []
 
-    # Loop through each document and extract URLs in batches
     for doc in documents:
-        # Check if 'content' and 'links' exist in the document
-        if 'content' in doc and 'links' in doc['content']:
-            # Extract URLs from the 'links' array
-            urls = doc['content']['links']
-            all_urls.extend(urls)
+        # Extract URLs only if 'content' and 'links' exist
+        links = doc.get("content", {}).get("links")
+        if links:
+            # Use a generator to iterate over links directly
+            for url in links:
+                batch_urls.append(url)
+                # Yield URLs in batches to control memory usage
+                if len(batch_urls) >= batch_size:
+                    yield batch_urls
+                    batch_urls = []  # Clear the batch after yielding
 
-            # Yield URLs in batches to prevent memory overload
-            if len(all_urls) >= batch_size:
-                yield all_urls
-                all_urls = []
-
-    # Yield remaining URLs (if any)
-    if all_urls:
-        yield all_urls
+    # Yield any remaining URLs
+    if batch_urls:
+        yield batch_urls
 
 def crawler(urls_batch):
     try:
@@ -161,10 +157,11 @@ def run_crawler_continuously():
                 saved_urls = fetch_saved_urls()
 
                 urls = root_urls + saved_urls
+                urls = list(set(urls))
 
                 if urls:
                     logger.info(f"Starting crawler with {len(urls)} root URLs")
-                    crawler(list(set(urls[::-1])))
+                    crawler(urls[::-1])
 
                 # Extract and process URLs in batches
                 for extracted_urls in extract_urls(batch_size=BATCH_SIZE):
