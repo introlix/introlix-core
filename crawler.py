@@ -6,13 +6,16 @@ from fastapi import APIRouter, HTTPException, Query
 from introlix_api.crawler.bot import IntrolixBot, BotArgs
 from introlix_api.exception import CustomException
 from introlix_api.logger import logger
-from introlix_api.app.database import search_data
+from introlix_api.app.database import search_data, db
 from introlix_api.app.appwrite import fetch_root_sites, fetch_saved_urls, save_urls
+from pymongo import ASCENDING
 
 router = APIRouter()
 
 BATCH_SIZE = 10
 urls_batch = []
+storage_threshold = 500 * 1024 * 1024
+delete_batch = 1000
 
 def filter_urls(url: str) -> bool:
     """
@@ -85,6 +88,14 @@ def filter_urls(url: str) -> bool:
 def save_to_db(data):
     global urls_batch
     try:
+        stats = db.command("collStats", "search_data")
+        storage_size = stats['size']
+
+        if storage_size >= storage_threshold:
+            oldest_docs = search_data.find().sort("createdAt", ASCENDING).limit(delete_batch)
+            oldest_ids = [doc['_id'] for doc in oldest_docs]
+            search_data.delete_many({"_id": {"$in": oldest_ids}})
+
         urls = [d["url"] for d in data if filter_urls(d["url"])]
         existing_urls = {doc["url"] for doc in search_data.find({"url": {"$in": urls}})}
 

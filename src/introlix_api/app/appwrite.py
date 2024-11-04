@@ -120,7 +120,7 @@ def save_urls(urls):
             collection_id=APPWRITE_SAVED_URLS_COLLECTION_ID,
             queries=[Query.limit(1)]
         )
-        total_count = total_count_response['total']
+        total_count = len(total_count_response)
 
         # Delete all documents if the count exceeds 20,000
         if total_count > 20000:
