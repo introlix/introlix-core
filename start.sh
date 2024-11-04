@@ -15,4 +15,5 @@ while true; do
     
     # Kill the crawler process to restart it
     kill $!
+    sleep 10
 done
