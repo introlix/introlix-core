@@ -330,7 +330,7 @@ class IntrolixBot:
                     'tags': tags,
                     'vote': 0,
                     'links': sorted(new_links),
-                    'date': date if date else 'No date found'
+                    'created_at': date if date else 'No date found'
                 },
             }
 

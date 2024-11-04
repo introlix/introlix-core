@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List
 from datetime import date
+import datetime
 
 # signup model
 class UserSignup(BaseModel):
@@ -24,3 +25,4 @@ class FeedModel(BaseModel):
     image_url: str
     tags: list
     vote: int
+    created_at: datetime.datetime

@@ -38,7 +38,7 @@ async def fetch_data(request: Request, tag: str, page: int = 1, limit: int = 20)
                 item["image_url"]=""
             item["tags"]=item['content'].get('tags', [])
             item["vote"]=item['content'].get('vote', 0)
-            item["date"]=item['content'].get('created_at', '')
+            item["created_at"]=item['content'].get('created_at', '')
 
         return response
 
