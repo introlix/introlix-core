@@ -292,6 +292,35 @@ class IntrolixBot:
             if not tags:
                 tags = ['general']
 
+
+            date = dom.xpath("string(//meta[@property='article:published_time']/@content)")
+
+            # Fallback: Check JSON-LD for datePublished in <script>
+            if not date:
+                json_ld_date = dom.xpath("string(//script[@type='application/ld+json'])")
+                if json_ld_date:
+                    import json
+                    try:
+                        data = json.loads(json_ld_date)
+                        date = data.get("datePublished", "").split("T")[0]
+                    except json.JSONDecodeError:
+                        pass
+
+            # Fallback: Look for <time> tag with datetime attribute
+            if not date:
+                date = dom.xpath("string(//time/@datetime)")
+
+            # Fallback: Check for common patterns with 'Last Updated'
+            if not date:
+                date = dom.xpath("string(//span[contains(text(), 'Last Updated')])")
+
+            # Clean up date format if necessary (for example, strip out extra text)
+            if date:
+                # Extract date pattern YYYY-MM-DD or similar
+                match = re.search(r"\d{4}-\d{2}-\d{2}", date) or re.search(r"\d{2} \w{3}, \d{4}", date)
+                date = match.group(0) if match else date
+
+
             return {
                 'url': url,
                 'content': {
@@ -300,7 +329,8 @@ class IntrolixBot:
                     'image': image,
                     'tags': tags,
                     'vote': 0,
-                    'links': sorted(new_links)
+                    'links': sorted(new_links),
+                    'date': date if date else 'No date found'
                 },
             }
 

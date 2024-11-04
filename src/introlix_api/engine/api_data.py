@@ -58,7 +58,8 @@ def fetch_data(page: int = 1, per_page: int = 10, tag = ''):
                 "desc": item["description"],
                 "image": item["image"],
                 "tags": item["tags"],
-                "vote": 0
+                "vote": 0,
+                "date": item["created_at"]
             }
         }
         data.append(new_entry)
