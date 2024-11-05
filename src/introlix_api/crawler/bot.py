@@ -274,12 +274,16 @@ class IntrolixBot:
                 if desc_text is not None:
                     desc = desc_text.strip()
 
-            image_elements = dom.xpath("//img")
-            image_urls = [urljoin(url, img.get("src")) for img in image_elements if img.get("src")]
-            if len(image_urls) > 0:
-                image = image_urls[0]
+            og_image_element = dom.xpath("//meta[@property='og:image']/@content")
+            if og_image_element:
+                image = og_image_element[0]
             else:
-                image = ""
+                image_elements = dom.xpath("//img")
+                image_urls = [urljoin(url, img.get("src")) for img in image_elements if img.get("src")]
+                if len(image_urls) > 0:
+                    image = image_urls[0]
+                else:
+                    image = ""
 
             new_links = self.get_urls_from_page(url)
             new_links = list(set(new_links))
