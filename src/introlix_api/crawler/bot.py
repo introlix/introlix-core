@@ -13,6 +13,7 @@ from urllib.robotparser import RobotFileParser
 
 from requests import ReadTimeout
 from introlix_api.utils.core import html_to_dom
+from introlix_api.utils.tags import fetch_tags
 from introlix_api.app.appwrite import fetch_root_sites
 from ssl import SSLCertVerificationError
 from urllib3.exceptions import NewConnectionError, MaxRetryError
@@ -41,30 +42,7 @@ class IntrolixBot:
         self.obey_robots_txt = obey_robots_txt
         self.root_sites = fetch_root_sites()
         self.root_sites_netlocs = {urlparse(root_url).netloc for root_url in self.root_sites}
-        self.good_tags = {'.net', 'dotnet', 'web3d','ai', 'aiops', 'algolia', 'amazon', 'alibaba', 'amd', 'android',
-                          'angular', 'apache', 'airflow', 'apollo', 'apple', 'appwrite', 'arm', 'assembly', 'auth0',
-                          'automl', 'aws', 'aws-ec2', 'aws-s3', 'aws-sagemaker', 'azure', 'axios', 'backend', 'bard',
-                          'bash', 'bert', 'bi', 'big-data', 'binary-search', 'binary-tree', 'bitcoin', 'blender', 'blockchain',
-                          'c', 'c#', 'c++', 'cpp', 'chatgpt', 'cicd', 'ci-cd', 'claude', 'cloud', 'cloudflare', 'cms', 'coding',
-                          'cv', 'computer-vision', 'cpython', 'crawler', 'css', 'crypto', 'cuda', 'curl', 'dart', 'data-analysis',
-                          'data', 'data-science', 'deep-learning', 'deno', 'devops', 'diffusion-models', 'django', 'dns', 'docker',
-                          'elixir', 'embedded', 'embeddings', 'erlang', 'express', 'facebook', 'fastapi', 'fedora', 'figma', 'firebase',
-                          'firefox', 'flask', 'frontend', 'game-design', 'game-development', 'gcp', 'genai', 'git', 'github', 'gitlab',
-                          'godot', 'golang', 'google', 'google-gemini', 'google-chrome', 'google-deepmind', 'gpt', 'graphql', 'grok',
-                          'hackathon', 'hardware', 'heroku', 'hive', 'html', 'htmx', 'huggingface', 'ibm', 'imb-cloud', 'intel', 'ios',
-                          'java', 'javascript', 'jdk', 'jenkins', 'jetbrains', 'jquery', 'jsx', 'jupyter', 'jvm', 'jwt', 'jax',
-                          'keras', 'kotlin', 'langchain', 'laravel', 'linkedin', 'linux', 'llama', 'llm', 'llmops', 'lstm', 'mac',
-                          'machine-learning', 'ml', 'math', 'matplotlib', 'microsoft', 'mistral-ai', 'mlops', 'mobile', 'mongodb',
-                          'mongoose', 'mozilla', 'nestjs', 'netflix', 'netlify', 'neural-networks', 'nixos', 'nlp', 'nocode','nodejs',
-                          'nosql', 'notion', 'npm', 'numpy', 'nuxt', 'nvidia', 'oauth', 'object-detection', 'objective-c', 'ollama', 
-                          'open-source', 'openai', 'openapi', 'opencv', 'opensearch', 'oracle', 'pandas', 'paypal', 'perl', 'php', 
-                          'pip', 'postgresql', 'pastman', 'power-bi', 'prisma', 'python', 'pytorch', 'r', 'rag', 'react', 'reactjs',
-                          'react-native', 'red-hat', 'redis', 'redux', 'rest-api', 'robotics', 'ruby', 'safari', 'scikit', 'shell',
-                          'slack', 'sora', 'spark', 'stripe', 'swift', 'tableau', 'tensorflow', 'tesla', 'text-generation', 'text-to-image',
-                          'text-to-speech', 'text-to-video', 'transfer-learning', 'transformers', 'twitter', 'ubuntu', 'ui-design', 'ui-ux',
-                          'unity', 'unix', 'unreal-engine', 'unsupervised-learning', 'ux', 'v8', 'vector-search', 'vercel', 'vertex-ai',
-                          'video-generation', 'vim', 'visual-studio', 'vscode', 'vuejs', 'vue', 'web3', 'webassembly', 'web3', 'whisper', 'xbox',
-                          'yarn', 'zoom'}  # TODO: need to add more
+        self.good_tags = fetch_tags()
 
         # bot args
         self.TIMEOUT_SECONDS = args.TIMEOUT_SECONDS
@@ -408,32 +386,5 @@ class IntrolixBot:
             if e.errno == errno.EPIPE:
                 pass
 
-    def crawl(self, batch_size: int, deep: int = 10):
-        """
-        Function to crawl the site.
-
-        Args:
-            batch_size (int): batch size of the initial urls.
-            deep (int): How deep from a site data show be fetched.
-        """
-
-        all_urls = self.urls
-        current_urls = self.urls
-
-        while True:
-            new_urls = self.get_urls_from_page_parallel(current_urls, batch_size)
-            new_urls = list(set(new_urls))
-            logger.info(f"Fetched New urls len {len(new_urls)}")
-            current_urls_set = set(new_urls) - set(all_urls)
-            all_urls.extend(new_urls)
-            current_urls = list(current_urls_set)
-
-            # If no new URLs are found, break the loop
-            if not current_urls_set:
-                logger.info("No new URLs found, exiting the loop.")
-                break
-
-            logger.info(f"Current urls len {len(current_urls)}")
-            logger.info(f"All urls len is {len(all_urls)}")
-
-            # logger.info(f"Fetched New urls are {new_urls}")
+    def fetch_tags(self):
+        return self.good_tags

@@ -3,7 +3,6 @@ from bson import ObjectId
 import sys
 import httpx
 import os
-import random
 import crawler
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
@@ -14,6 +13,7 @@ from dotenv import load_dotenv, dotenv_values
 from introlix_api.app.appwrite import databases, APPWRITE_DATABASE_ID, ID, APPWRITE_ACCOUNT_COLLECTION_ID, get_interests
 from introlix_api.app.database import startup_db_client, shutdown_db_client
 from introlix_api.ml.recommendation import Recommendation
+from introlix_api.utils.tags import fetch_tags
 
 from introlix_api.exception import CustomException
 
@@ -192,6 +192,11 @@ async def get_youtube_videos(query: str = None):
         response = await client.get(url, params=params)
         response.raise_for_status()  # Raise an error for bad responses
         return response.json()
+    
+@app.get("/tags")
+async def get_tags():
+    tags = fetch_tags()
+    return tags
     
 app.include_router(auth.router, prefix="/auth")
 app.include_router(run_spider.router, prefix="/spider")
