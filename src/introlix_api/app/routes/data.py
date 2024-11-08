@@ -1,7 +1,7 @@
 import pytz
 from dateutil import parser
 from datetime import datetime, timezone
-from fastapi import FastAPI, APIRouter, HTTPException, Request
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Query
 from introlix_api.exception import CustomException
 from introlix_api.app.database import startup_db_client, shutdown_db_client
 from introlix_api.app.model import FeedModel
@@ -34,13 +34,13 @@ def normalize_date(date_str):
     return date_obj.astimezone(pytz.UTC)
 
 @router.get('/posts', response_model=List[FeedModel])
-async def fetch_data(request: Request, tags: List[str], page: int = 1, limit: int = 20):
+async def fetch_data(request: Request, tags: List[str] = Query(...), page: int = 1, limit: int = 20):
     """
     Function to fetch posts based on pagination, query, and sorting options.
     """
     try:
         skip = (page - 1) * limit
-        query = {"content.tags": {"$in": tags}}  # Updated query to match any tag in the list
+        query = {"content.tags": {"$in": tags}}
         response = await request.app.mongodb['search_data'].find(query).skip(skip).limit(limit).to_list(limit)
 
         current_date = datetime.now(timezone.utc)
