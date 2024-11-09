@@ -1,7 +1,9 @@
+from bson import ObjectId
 import pytz
 from dateutil import parser
 from datetime import datetime, timezone
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Query
+from introlix_api.app.database import votes
 from introlix_api.exception import CustomException
 from introlix_api.app.database import startup_db_client, shutdown_db_client
 from introlix_api.app.model import FeedModel
@@ -80,5 +82,54 @@ async def fetch_data(request: Request, tags: List[str] = Query(...), page: int =
         hotness_ranked_posts.sort(key=lambda x: x["rank"], reverse=False)
         return hotness_ranked_posts
 
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post('/vote')
+async def vote(request: Request, vote: int, post_id: str = Query(...), user_id: str = Query(...)):
+    """
+    Function to vote for a post.
+    """
+    try:
+        post_id = ObjectId(post_id)
+        user_id = ObjectId(user_id)
+
+        # Check if the user has already voted for the post
+        result = await request.app.mongodb['votes'].find_one({"user_id": user_id, "post_id": post_id, "vote": vote})
+
+        if result:
+            votes.delete_one({
+                "_id": result["_id"]
+            })
+        else:
+            existing_vote = await request.app.mongodb['votes'].find_one({"user_id": user_id, "post_id": post_id})
+            if existing_vote:
+                votes.delete_one({
+                "_id": existing_vote["_id"]
+                })
+
+            votes.insert_one({
+                "post_id": post_id,
+                "user_id": user_id,
+                "vote": vote
+            })
+
+        # counting total vote
+         # Calculate the total vote count for the post
+        total_votes = await request.app.mongodb['votes'].aggregate([
+            {"$match": {"post_id": post_id}},
+            {"$group": {"_id": "$post_id", "total_votes": {"$sum": "$vote"}}}
+        ]).to_list(length=1)
+
+        # Extract the total vote count or default to 0 if no votes are found
+        vote_count = total_votes[0]["total_votes"] if total_votes else 0
+
+        # Update the vote count in the post document
+        await request.app.mongodb['search_data'].update_one(
+            {"_id": post_id},
+            {"$set": {"content.vote": vote_count}}
+        )
+
+        return {"message": f"Vote submitted successfully with total vote {vote_count}"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

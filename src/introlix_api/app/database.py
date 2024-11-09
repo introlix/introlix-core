@@ -10,6 +10,7 @@ db = client.IntrolixDb
 
 feed_data = db.feedData
 search_data = db.search_data
+votes = db.votes
 
 async def startup_db_client(app):
     app.mongodb_client = AsyncIOMotorClient(MONGODB_CLIENT_ID)
