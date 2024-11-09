@@ -132,3 +132,21 @@ async def vote(request: Request, vote: int, post_id: str = Query(...), user_id: 
         return {"message": f"Vote submitted successfully with total vote {vote_count}"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get('/hasvoted')
+async def hasVote(request: Request, post_id: str = Query(...), user_id: str = Query(...)):
+    """
+    Function to check if the user has already voted for a post.
+    """
+    try:
+        post_id = ObjectId(post_id)
+
+        existing_vote = await request.app.mongodb['votes'].find_one({"user_id": user_id, "post_id": post_id})
+
+        if existing_vote:
+            return {"has_voted": True, "vote": existing_vote['vote']}
+        else:
+            return {"has_voted": False}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
