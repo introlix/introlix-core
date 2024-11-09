@@ -92,7 +92,6 @@ async def vote(request: Request, vote: int, post_id: str = Query(...), user_id: 
     """
     try:
         post_id = ObjectId(post_id)
-        user_id = ObjectId(user_id)
 
         # Check if the user has already voted for the post
         result = await request.app.mongodb['votes'].find_one({"user_id": user_id, "post_id": post_id, "vote": vote})
