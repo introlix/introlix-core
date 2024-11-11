@@ -88,7 +88,7 @@ async def fetch_data(request: Request, tags: List[str] = Query(...), page: int =
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@router.get('/disscussion', response_model=List[FeedModel])
+@router.get('/disscussion')
 async def fetch_disscussion(request: Request, tags: List[str] = Query(...), page: int = 1, limit: int = 20):
     """
     Function to fetch discussion based on pagination, query, and sorting options.
@@ -114,10 +114,11 @@ async def fetch_disscussion(request: Request, tags: List[str] = Query(...), page
 
             # Handle created_at normalization
             created_at_str = item['content'].get('created_at', '')
+            created_at_str = datetime.utcfromtimestamp(created_at_str)
             if created_at_str in [None, "No date found"]:
                 created_at = current_date
             else:
-                created_at = normalize_date(created_at_str)
+                created_at = normalize_date(str(created_at_str))
 
             # Ensure created_at is a datetime object; if None, skip the calculation
             if created_at:
