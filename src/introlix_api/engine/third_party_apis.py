@@ -29,7 +29,8 @@ def get_devDotTo_data(page: int = 1, per_page: int = 10, tag: int = '') -> dict:
                 "url": article["url"],
                 "tags": article["tag_list"],
                 "image": article["cover_image"],
-                "created_at": article["created_at"]
+                "created_at": article["created_at"],
+                "type": "article"
             }
             for article in articles
             ]
@@ -60,7 +61,8 @@ def get_github_repo(page: int = 1, per_page: int = 10, tag: int = ''):
                 "description": repo["description"],
                 "url": repo["html_url"],
                 "stars": repo["stargazers_count"],
-                "created_at": repo["created_at"]
+                "created_at": repo["created_at"],
+                "type": "article"
             }
             for repo in repos["items"]
             ]
@@ -70,5 +72,37 @@ def get_github_repo(page: int = 1, per_page: int = 10, tag: int = ''):
     except Exception as e:
         raise CustomException(e, sys) from e
 
+def get_stack_overflow_data(page: int = 1, per_page: int = 10, tag: int = ''):
+    """
+    Function to fetch data from Stack Overflow API.
+    """
+    try:
+        # Construct the URL with the provided parameters
+        url = f"https://api.stackexchange.com/2.3/questions?order=desc&sort=activity&tagged={tag}&site=stackoverflow&page={page}&pagesize={per_page}"
+        response = requests.get(url)
+        
+        if response.status_code!= 200:
+            logger.debug(f"Failed to fetch data from Stack Overflow: {response.status_code}")
+        
+        # Convert the response to JSON
+        questions = response.json()
+        
+        extracted_questions = [
+            {
+                "title": question["title"],
+                "url": question["link"],
+                "tags": question["tags"],
+                "created_at": question["creation_date"],
+                "answer_count": question["answer_count"],
+                "type": "disscussion"
+            }
+            for question in questions["items"]
+            ]
+        
+        return extracted_questions
+        
+    except Exception as e:
+        raise CustomException(e, sys) from e
+
 if __name__ == "__main__":
-    print(get_devDotTo_data(1, 10))
+    print(get_stack_overflow_data(1, 10, tag='python'))

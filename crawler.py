@@ -9,6 +9,7 @@ from introlix_api.logger import logger
 from introlix_api.app.database import search_data, db
 from introlix_api.app.appwrite import fetch_root_sites, fetch_saved_urls, save_urls
 from pymongo import ASCENDING
+from pymongo.errors import DuplicateKeyError
 
 router = APIRouter()
 
@@ -88,6 +89,7 @@ def filter_urls(url: str) -> bool:
 def save_to_db(data):
     global urls_batch
     try:
+        # Check database storage size and delete old documents if needed
         stats = db.command("collStats", "search_data")
         storage_size = stats['size']
 
@@ -96,23 +98,27 @@ def save_to_db(data):
             oldest_ids = [doc['_id'] for doc in oldest_docs]
             search_data.delete_many({"_id": {"$in": oldest_ids}})
 
+        # Prepare list of URLs to check in the database
         urls = [d["url"] for d in data if filter_urls(d["url"])]
-        existing_urls = {doc["url"] for doc in search_data.find({"url": {"$in": urls}})}
 
-        # Use a generator to only keep new documents that need to be inserted
-        new_documents = (
-            {"url": d["url"], "content": d["content"]}
+        # Retrieve existing URLs from the database to filter out duplicates
+        existing_urls = set(search_data.find({"url": {"$in": urls}}).distinct("url"))
+
+        # Filter out documents with URLs that already exist in the database
+        unique_data = [
+            {"url": d["url"], "content": d["content"], "type": "article"}
             for d in data
             if d["url"] not in existing_urls and d.get("content") is not None
-        )
+        ]
 
-        # Insert documents if there are any to add
-        new_docs_list = list(new_documents)
+        # Insert only unique documents
+        if unique_data:
+            try:
+                search_data.insert_many(unique_data)
+            except DuplicateKeyError as e:
+                logger.info("Duplicate URL detected during insertion. Skipping duplicate entries.")
 
-        if new_docs_list:
-            search_data.insert_many(new_docs_list)
-
-        # Save URLs if urls_batch is not empty
+        # Process URLs in `urls_batch` if it has URLs
         if urls_batch:
             try:
                 save_urls(urls_batch)

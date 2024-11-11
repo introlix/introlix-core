@@ -17,5 +17,6 @@ sentence-transformers
 nltk
 algoliasearch
 apscheduler
+cachetools
 
 -e .
