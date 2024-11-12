@@ -88,7 +88,7 @@ async def fetch_data(request: Request, tags: List[str] = Query(...), page: int =
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@router.get('/disscussion')
+@router.get('/discussion')
 async def fetch_disscussion(request: Request, tags: List[str] = Query(...), page: int = 1, limit: int = 20):
     """
     Function to fetch discussion based on pagination, query, and sorting options.
@@ -97,7 +97,7 @@ async def fetch_disscussion(request: Request, tags: List[str] = Query(...), page
         skip = (page - 1) * limit
         query = {
             "content.tags": {"$in": tags},
-            "type": "disscussion"
+            "type": "discussion"
         }
         response = await request.app.mongodb['search_data'].find(query).skip(skip).limit(limit).to_list(limit)
 

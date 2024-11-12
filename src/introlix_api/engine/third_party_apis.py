@@ -94,7 +94,7 @@ def get_stack_overflow_data(page: int = 1, per_page: int = 10, tag: int = ''):
                 "tags": question["tags"],
                 "created_at": question["creation_date"],
                 "answer_count": question["answer_count"],
-                "type": "disscussion"
+                "type": "discussion"
             }
             for question in questions["items"]
             ]
