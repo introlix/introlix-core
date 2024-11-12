@@ -26,3 +26,12 @@ class FeedModel(BaseModel):
     tags: list
     vote: int
     created_at: Optional[datetime]
+
+class DiscussionModel(BaseModel):
+    id: str = Field(..., alias="_id")
+    title: str
+    url: str
+    tags: list
+    vote: int
+    created_at: Optional[datetime]
+    answer_count: int

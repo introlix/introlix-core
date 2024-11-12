@@ -6,7 +6,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Request, Query
 from introlix_api.app.database import votes
 from introlix_api.exception import CustomException
 from introlix_api.app.database import startup_db_client, shutdown_db_client
-from introlix_api.app.model import FeedModel
+from introlix_api.app.model import FeedModel, DiscussionModel
 from contextlib import asynccontextmanager
 from typing import List
 
@@ -88,7 +88,7 @@ async def fetch_data(request: Request, tags: List[str] = Query(...), page: int =
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@router.get('/discussion')
+@router.get('/discussion', response_model=List[DiscussionModel])
 async def fetch_disscussion(request: Request, tags: List[str] = Query(...), page: int = 1, limit: int = 20):
     """
     Function to fetch discussion based on pagination, query, and sorting options.
