@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query
 from introlix_api.crawler.bot import IntrolixBot, BotArgs
 from introlix_api.exception import CustomException
 from introlix_api.logger import logger
+from introlix_api.utils.root_sites import root_sites
 from introlix_api.app.database import search_data, db
 from introlix_api.app.appwrite import fetch_root_sites, fetch_saved_urls, save_urls
 from pymongo import ASCENDING
@@ -170,15 +171,24 @@ def run_crawler_continuously():
             start_time = time.time()  # Record the start time
 
             while (time.time() - start_time) < 600:  # Run for 10 minutes (600 seconds)
-                root_urls = fetch_root_sites()
-                saved_urls = fetch_saved_urls()
+                try:
+                    root_urls = fetch_root_sites()
+                    saved_urls = fetch_saved_urls()
+                except Exception as e:
+                    logger.info("Error fetching URLs from Appwrite: %s", str(e))
+                    root_urls = []
+                    saved_urls = []
 
-                urls = root_urls + saved_urls
-                urls = list(set(urls))
+                if root_urls and saved_urls:
+                    urls = root_urls + saved_urls
+                    urls = list(set(urls))
+                else:
+                    urls = root_sites() + urls_batch
 
                 if urls:
                     logger.info(f"Starting crawler with {len(urls)} root URLs")
                     crawler(urls[::-1])
+
 
                 # Extract and process URLs in batches
                 for extracted_urls in extract_urls(batch_size=BATCH_SIZE):

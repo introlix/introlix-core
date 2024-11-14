@@ -14,7 +14,7 @@ from urllib.robotparser import RobotFileParser
 from requests import ReadTimeout
 from introlix_api.utils.core import html_to_dom
 from introlix_api.utils.tags import fetch_tags
-from introlix_api.app.appwrite import fetch_root_sites
+from introlix_api.utils.root_sites import root_sites
 from ssl import SSLCertVerificationError
 from urllib3.exceptions import NewConnectionError, MaxRetryError
 
@@ -40,7 +40,7 @@ class IntrolixBot:
         """
         self.urls = urls
         self.obey_robots_txt = obey_robots_txt
-        self.root_sites = fetch_root_sites()
+        self.root_sites = root_sites()
         self.root_sites_netlocs = {urlparse(root_url).netloc for root_url in self.root_sites}
         self.good_tags = fetch_tags()
 
